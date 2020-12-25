@@ -1,0 +1,38 @@
+DesktopApp(Client):
+-Runs in the background
+-Connects to request server first.
+-Request Server sends the network info of the DataServer that has his remote directory to connect to
+-Connects to a DataServer
+-Checks for any new files or updates in exhisting ones
+-Checks if there is available space
+-Sends the updates to the server(if there is available space)
+
+RequestServer
+-Routes the clients to the correct DataServer
+
+DataServer
+-Gets the updates from the client and updates the client's remote directory
+-If the client's local directory is out of date the server will send the updated files and vica verca
+-Hosting the http file server to access the files from the website
+
+Communication Protocol:
+-Requests and responses will be encoded and decoded in JSON
+-Request will be implemented using a struct(json)
+-Response will be implemented using a struct(json)
+
+DATABASE DESIGN:
+-Users table
+    ->Usename(primary Key)
+    ->Password
+    ->Email
+    ->DataServerID(foreign Key)
+-DataServers Table
+    ->DataServerID(primary Key)
+    ->MaxCapacity(Of Users)
+    ->IP Adress
+    ->HttpPort
+    ->ListeningPort
+-Files Table
+    ->Owner(foreing key from Users)
+    ->FilePath(Including tha name of the file)(Primary Key)
+    ->LastModified TIME
