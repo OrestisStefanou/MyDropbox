@@ -14,6 +14,15 @@ type user struct {
 	password string
 }
 
+type dataServerInfo struct {
+	serverID      int
+	maxCapacity   int
+	ipAddr        string
+	httpPort      string
+	listeningPort string
+	available     int
+}
+
 var db *sql.DB
 
 func dbConnect(dbUser, dbPass, dbName string) {
@@ -24,6 +33,43 @@ func dbConnect(dbUser, dbPass, dbName string) {
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
+}
+
+//Get the info of an available dataServer to register the user to
+func getAvailableDataServer() dataServerInfo {
+	found := false
+	var numberOfUsers int
+	rows, err := db.Query("SELECT * FROM DataServers")
+	checkErr(err)
+
+	serverInfo := dataServerInfo{}
+	for rows.Next() {
+		if found {
+			break
+		}
+		err = rows.Scan(&serverInfo.serverID, &serverInfo.maxCapacity, &serverInfo.ipAddr, &serverInfo.httpPort, &serverInfo.listeningPort, &serverInfo.available)
+		checkErr(err)
+		rows2, err := db.Query("SELECT COUNT(Users.Username) FROM Users,DataServers WHERE Users.DataServerId = ? AND DataServers.ServerId = Users.DataServerId AND DataServers.Available = True", serverInfo.serverID)
+		checkErr(err)
+		for rows2.Next() {
+			err = rows2.Scan(&numberOfUsers)
+			if numberOfUsers < serverInfo.maxCapacity && numberOfUsers > 0 {
+				found = true
+				break
+			}
+		}
+	}
+	//Check if by adding this user the number of users will be equal to maxcapacity
+	if numberOfUsers+1 >= serverInfo.maxCapacity {
+		//If true update the availability of the server to False
+		// update
+		stmt, err := db.Prepare("UPDATE DataServers set Available=False where ServerId=?")
+		checkErr(err)
+
+		_, err = stmt.Exec(serverInfo.serverID)
+		checkErr(err)
+	}
+	return serverInfo
 }
 
 //Insert a new user in the database

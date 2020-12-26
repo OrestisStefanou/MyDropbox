@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	dbConnect("orestis", "Ore$tis1997", "myDropbox")
+	info := getAvailableDataServer()
+	fmt.Println(info)
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/signup", signUpHandler)
 	http.ListenAndServe(":8080", nil)
