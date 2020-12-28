@@ -9,9 +9,10 @@ import (
 )
 
 type user struct {
-	username string
-	email    string
-	password string
+	username     string
+	email        string
+	password     string
+	dataServerID int
 }
 
 type dataServerInfo struct {
@@ -25,6 +26,7 @@ type dataServerInfo struct {
 
 var db *sql.DB
 
+//Connect to the database
 func dbConnect(dbUser, dbPass, dbName string) {
 	var err error
 	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", dbUser, dbPass, dbName))
@@ -39,7 +41,7 @@ func dbConnect(dbUser, dbPass, dbName string) {
 func getAvailableDataServer() dataServerInfo {
 	found := false
 	var numberOfUsers int
-	rows, err := db.Query("SELECT * FROM DataServers")
+	rows, err := db.Query("SELECT * FROM DataServers WHERE Available = True")
 	checkErr(err)
 
 	serverInfo := dataServerInfo{}
@@ -49,14 +51,12 @@ func getAvailableDataServer() dataServerInfo {
 		}
 		err = rows.Scan(&serverInfo.serverID, &serverInfo.maxCapacity, &serverInfo.ipAddr, &serverInfo.httpPort, &serverInfo.listeningPort, &serverInfo.available)
 		checkErr(err)
-		rows2, err := db.Query("SELECT COUNT(Users.Username) FROM Users,DataServers WHERE Users.DataServerId = ? AND DataServers.ServerId = Users.DataServerId AND DataServers.Available = True", serverInfo.serverID)
+		rows2, err := db.Query("SELECT COUNT(Username) FROM Users WHERE Users.DataServerId = ?", serverInfo.serverID)
 		checkErr(err)
 		for rows2.Next() {
 			err = rows2.Scan(&numberOfUsers)
-			if numberOfUsers < serverInfo.maxCapacity && numberOfUsers > 0 {
-				found = true
-				break
-			}
+			found = true
+			break
 		}
 	}
 	//Check if by adding this user the number of users will be equal to maxcapacity
@@ -82,19 +82,22 @@ func createUser(userInfo user, dataServerID int) {
 }
 
 //Get a user from the database.If a user with this username doesn't exist
-//the user.Username will be an empty string
-func getUser(username string) user {
+//it returns an error
+func getUser(username string) (user, error) {
 	rows, err := db.Query("SELECT * FROM Users WHERE username=?", username)
 	checkErr(err)
 
 	userInfo := user{}
-	userInfo.username = ""
 
 	for rows.Next() {
-		err = rows.Scan(&userInfo.username, &userInfo.email, &userInfo.password)
+		err = rows.Scan(&userInfo.username, &userInfo.email, &userInfo.password, &userInfo.dataServerID)
 		checkErr(err)
 	}
-	return userInfo
+	var returnErr error = nil
+	if userInfo.username == "" {
+		returnErr = fmt.Errorf("User with this username does not exist")
+	}
+	return userInfo, returnErr
 }
 
 func checkErr(err error) {

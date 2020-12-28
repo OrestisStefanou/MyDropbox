@@ -9,8 +9,6 @@ import (
 
 func main() {
 	dbConnect("orestis", "Ore$tis1997", "myDropbox")
-	info := getAvailableDataServer()
-	fmt.Println(info)
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/signup", signUpHandler)
 	http.ListenAndServe(":8080", nil)
@@ -47,13 +45,30 @@ func signUpHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		//Handle the signup form
 		r.ParseForm()
-		myUser := user{}
-		myUser.username = r.Form.Get("entered_username")
-		myUser.email = r.Form.Get("entered_email")
-		myUser.password = r.Form.Get("entered_pass")
+		userInfo := user{}
+		userInfo.username = r.Form.Get("entered_username")
+		userInfo.email = r.Form.Get("entered_email")
+		userInfo.password = r.Form.Get("entered_pass")
 		//t, err := template.ParseFiles("welcomeresponse.html")
 		//check(err)
 		//t.Execute(w, myUser)
-		fmt.Println(myUser)
+		fmt.Println(userInfo)
+		//1.Check if a user with this username already exists
+		result, err := getUser(userInfo.username)
+		if err != nil { //User with this username does not exist
+			//Get available data server info
+			fmt.Println(err)
+			serverInfo := getAvailableDataServer()
+			fmt.Println(serverInfo)
+			//Send a request to create a folder for the user
+			//If response is all good create a new user in the database
+
+		} else {
+			//Send error html page
+			t, err := template.ParseFiles("errorPage.html")
+			check(err)
+			t.Execute(w, nil)
+			fmt.Println(result)
+		}
 	}
 }
