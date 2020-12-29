@@ -73,11 +73,11 @@ func getAvailableDataServer() dataServerInfo {
 }
 
 //Insert a new user in the database
-func createUser(userInfo user, dataServerID int) {
+func createUser(userInfo user) {
 	stmt, err := db.Prepare("INSERT Users SET Username=?,Email=?,Password=?,DataServerId=?")
 	checkErr(err)
 
-	_, err = stmt.Exec(userInfo.username, userInfo.email, userInfo.password, dataServerID)
+	_, err = stmt.Exec(userInfo.username, userInfo.email, userInfo.password, userInfo.dataServerID)
 	checkErr(err)
 }
 
