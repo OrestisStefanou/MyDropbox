@@ -1,26 +1,16 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
 const baseDir = "/home/orestis/MyDropboxClients"
-
-//Struct of message to communicate
-type netMsg struct {
-	From  string
-	Rtype string
-	Data  string
-}
 
 func main() {
 	if len(os.Args) != 2 {
@@ -90,54 +80,4 @@ func createUser(conn net.Conn, r netMsg) {
 		return
 	}
 	sendMsg(conn, response)
-}
-
-//Creates a message in JSON format
-func createMsg(from, rtype, data string) ([]byte, error) {
-	r := netMsg{
-		From:  from,
-		Rtype: rtype,
-		Data:  data,
-	}
-	d, err := json.Marshal(&r)
-	if err != nil {
-		returnErr := fmt.Errorf("Error during json encoding")
-		return d, returnErr
-	}
-	d = append(d, "\n"...)
-	return d, nil
-}
-
-//Receive a message from a socket
-func getMsg(conn net.Conn) (netMsg, error) {
-	jsonResponse := netMsg{}
-	r := bufio.NewReader(conn)
-	response, err := r.ReadString('\n')
-	if err != nil {
-		return jsonResponse, err
-	}
-	response = strings.TrimSpace(response)
-	err = json.Unmarshal([]byte(response), &jsonResponse)
-	if err != nil {
-		return jsonResponse, err
-	}
-	return jsonResponse, nil
-}
-
-//Send a message through a socket
-func sendMsg(conn net.Conn, msg []byte) {
-	msgLen := len(msg)
-	totalBytesSent, err := conn.Write(msg)
-	if err != nil {
-		log.Println("-> Connection:", err)
-		return
-	}
-	for totalBytesSent < msgLen {
-		bytesSent, err := conn.Write(msg[totalBytesSent:])
-		if err != nil {
-			log.Println("-> Connection:", err)
-			return
-		}
-		totalBytesSent += bytesSent
-	}
 }
