@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"fmt"
 	"io"
 	"log"
@@ -73,6 +74,16 @@ func createUser(conn net.Conn, r netMsg) {
 		sendMsg(conn, response)
 		return
 	}
+	err = createZip(userDir, r.Data)
+	if err != nil {
+		response, err := createMsg("DataServer", "ERROR", "")
+		if err != nil {
+			fmt.Println("Problem at creating the message")
+			return
+		}
+		sendMsg(conn, response)
+		return
+	}
 	//Respond to the http server that directory created
 	response, err := createMsg("DataServer", "OK", "")
 	if err != nil {
@@ -80,4 +91,87 @@ func createUser(conn net.Conn, r netMsg) {
 		return
 	}
 	sendMsg(conn, response)
+}
+
+//Create the zip file that contains the neccessary files to install the app
+func createZip(userDir, username string) error {
+	//Create the conf file
+	f, err := os.Create("client.conf")
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(username + "\n")
+	if err != nil {
+		return err
+	}
+	f.Sync()
+	f.Close()
+
+	//Create the zip file
+	filesToZip := []string{"client.conf", "server"}
+	output := filepath.Join(userDir, "myDropboxApp")
+	if err := ZipFiles(output, filesToZip); err != nil {
+		return err
+	}
+	//Now that we create the zip file we remove the conf file
+	os.Remove("client.conf")
+	return nil
+}
+
+// ZipFiles compresses one or many files into a single zip archive file.
+// Param 1: filename is the output zip file's name.
+// Param 2: files is a list of files to add to the zip.
+func ZipFiles(filename string, files []string) error {
+
+	newZipFile, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer newZipFile.Close()
+
+	zipWriter := zip.NewWriter(newZipFile)
+	defer zipWriter.Close()
+
+	// Add files to zip
+	for _, file := range files {
+		if err = addFileToZip(zipWriter, file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func addFileToZip(zipWriter *zip.Writer, filename string) error {
+
+	fileToZip, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fileToZip.Close()
+
+	// Get the file information
+	info, err := fileToZip.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+
+	// Using FileInfoHeader() above only uses the basename of the file. If we want
+	// to preserve the folder structure we can overwrite this with the full path.
+	header.Name = filename
+
+	// Change to deflate to gain better compression
+	// see http://golang.org/pkg/archive/zip/#pkg-constants
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, fileToZip)
+	return err
 }
