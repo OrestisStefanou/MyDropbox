@@ -8,6 +8,15 @@ import (
 	"net/http"
 )
 
+type User struct {
+	Name        string
+	nationality string //unexported field.
+}
+
+type FileServerInfo struct {
+	FileServerURL string
+}
+
 func main() {
 	dbConnect("orestis", "Ore$tis1997", "myDropbox")
 	http.HandleFunc("/", indexHandler)
@@ -17,9 +26,10 @@ func main() {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
+		myUser := User{"https://gobyexample.com/http-servers", "Kipros"}
 		t, err := template.ParseFiles("index.html")
 		check(err)
-		t.Execute(w, nil)
+		t.Execute(w, myUser)
 	} else {
 
 	}
@@ -61,9 +71,12 @@ func signUpHandler(w http.ResponseWriter, r *http.Request) {
 			if response.Rtype == "OK" {
 				createUser(userInfo)
 				//Send success html page
+				serverURL := fmt.Sprintf("http://%s:%s/", serverInfo.ipAddr, response.Data) //Create fileServer address
+				fileServer := FileServerInfo{serverURL}
 				t, err := template.ParseFiles("welcome.html")
 				check(err)
-				t.Execute(w, nil)
+				fmt.Println(fileServer)
+				t.Execute(w, fileServer)
 			}
 
 		} else {
