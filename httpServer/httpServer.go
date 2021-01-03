@@ -8,13 +8,13 @@ import (
 	"net/http"
 )
 
-type User struct {
-	Name        string
-	nationality string //unexported field.
-}
-
+//Structs for html pages
 type FileServerInfo struct {
 	FileServerURL string
+}
+
+type errorMessage struct {
+	Message string
 }
 
 func main() {
@@ -22,14 +22,15 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/signup", signUpHandler)
 	http.ListenAndServe(":8080", nil)
+	//Start a go routine to handle desktop client connections
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		myUser := User{"https://gobyexample.com/http-servers", "Kipros"}
+		testInfo := FileServerInfo{"https://gobyexample.com/http-servers"}
 		t, err := template.ParseFiles("index.html")
 		check(err)
-		t.Execute(w, myUser)
+		t.Execute(w, testInfo)
 	} else {
 
 	}
@@ -83,7 +84,8 @@ func signUpHandler(w http.ResponseWriter, r *http.Request) {
 			//Send error html page
 			t, err := template.ParseFiles("errorPage.html")
 			check(err)
-			t.Execute(w, nil)
+			errorMsg := errorMessage{"User with this username already exists!"}
+			t.Execute(w, errorMsg)
 			fmt.Println(result)
 		}
 	}

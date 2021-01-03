@@ -3,7 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -77,7 +80,34 @@ func main() {
 }
 
 func installApp() error {
-	_, err := os.Stat(initdFile)
+	const perm = os.O_CREATE | os.O_APPEND | os.O_WRONLY
+	if err := os.MkdirAll(varDir, 0755); err != nil {
+		if !os.IsPermission(err) {
+			return err
+		}
+		return ErrSudo
+	}
+	//Copy the configuration file to varDir
+	//Open the original conf file
+	original, err := os.Open("client.conf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	//Create the new file
+	newFilePath := filepath.Join(varDir, "client.conf")
+	newFile, err := os.Create(newFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//Copy the file
+	_, err = io.Copy(newFile, original)
+	if err != nil {
+		log.Fatal(err)
+	}
+	newFile.Close()
+	original.Close()
+
+	_, err = os.Stat(initdFile)
 	if err == nil {
 		return errors.New("Already installed")
 	}
@@ -166,12 +196,6 @@ func getPid() (pid int, err error) {
 
 func startApp() (err error) {
 	const perm = os.O_CREATE | os.O_APPEND | os.O_WRONLY
-	if err = os.MkdirAll(varDir, 0755); err != nil {
-		if !os.IsPermission(err) {
-			return err
-		}
-		return ErrSudo
-	}
 	cmd := exec.Command(bin, "run")
 	cmd.Stdout, err = os.OpenFile(filepath.Join(varDir, outFile), perm, 0644)
 	if err != nil {
@@ -223,6 +247,23 @@ func runApp() error {
 	//3.Get the file info from dataServer to initialize fileMap or load it from a file localy
 	//4.Check for updates and send them to the dataServer
 	fmt.Println("RUNNING")
+	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
+	for {
+		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000") //Update this with the ip and port of requestServer
+		if err != nil {
+			fmt.Println("PROBLEM WITH THE IP AND PORT PROVIDED")
+			break
+			//os.Exit(1)
+		}
+		conn, err := net.DialTCP("tcp", nil, addr)
+		if err != nil {
+			continue
+		}
+		//Send a request to get the ip and port of dataServer with our remote directory
+		req, err := createMsg("DesktopClient", "getDataServerInfo", "EnterMyUsename")
+		fmt.Println(conn, req)
+		break
+	}
 	for {
 		monitorFiles("/home/orestis/Desktop/MyDropBox")
 	}
