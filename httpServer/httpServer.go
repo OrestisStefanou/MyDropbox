@@ -9,6 +9,7 @@ import (
 )
 
 //Structs for html pages
+
 type FileServerInfo struct {
 	FileServerURL string
 }

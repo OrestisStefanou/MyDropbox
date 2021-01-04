@@ -247,25 +247,40 @@ func runApp() error {
 	//3.Get the file info from dataServer to initialize fileMap or load it from a file localy
 	//4.Check for updates and send them to the dataServer
 	fmt.Println("RUNNING")
+	//Read the username from conf file
+	confFilePath := filepath.Join(varDir, "client.conf")
+	lines, err := ReadLines(confFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	myUsername := lines[0]
+	fmt.Println("My username is ", myUsername)
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
 	for {
 		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000") //Update this with the ip and port of requestServer
 		if err != nil {
 			fmt.Println("PROBLEM WITH THE IP AND PORT PROVIDED")
-			break
-			//os.Exit(1)
+			os.Exit(1)
 		}
 		conn, err := net.DialTCP("tcp", nil, addr)
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 		//Send a request to get the ip and port of dataServer with our remote directory
-		req, err := createMsg("DesktopClient", "getDataServerInfo", "EnterMyUsename")
-		fmt.Println(conn, req)
+		req, err := createMsg("DesktopClient", "getDataServerInfo", myUsername)
+		sendMsg(conn, req)
+		response, err := getMsg(conn)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		fmt.Println(response)
+		conn.Close()
 		break
 	}
 	for {
-		monitorFiles("/home/orestis/Desktop/MyDropBox")
+		monitorFiles("/home/orestis/Downloads")
 	}
 	//return nil
 }

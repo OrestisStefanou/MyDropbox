@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,4 +37,23 @@ func visit(p string, info os.FileInfo, err error) error {
 func monitorFiles(dropBoxDir string) {
 	filepath.Walk(dropBoxDir, visit)
 	time.Sleep(5 * time.Second)
+}
+
+// ReadLines reads all lines from a file
+func ReadLines(filePath string) ([]string, error) {
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0755)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	res := make([]string, 0)
+	for scanner.Scan() {
+		line := scanner.Text()
+		res = append(res, line)
+	}
+	if err = scanner.Err(); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
