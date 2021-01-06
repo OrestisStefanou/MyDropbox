@@ -242,8 +242,6 @@ func stopApp() (err error) {
 }
 
 func runApp() error {
-	//1.Connect to router server to get the info of the dataServer
-	//2.Connect to dataServer
 	//3.Get the file info from dataServer to initialize fileMap or load it from a file localy
 	//4.Check for updates and send them to the dataServer
 	fmt.Println("RUNNING")
@@ -254,17 +252,18 @@ func runApp() error {
 		log.Fatal(err)
 	}
 	myUsername := lines[0]
-	fmt.Println("My username is ", myUsername)
+	var dataServerInfo string
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
 	for {
-		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000") //Update this with the ip and port of requestServer
+		//Connect to router server to get the info of the dataServer
+		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000")
 		if err != nil {
 			fmt.Println("PROBLEM WITH THE IP AND PORT PROVIDED")
 			os.Exit(1)
 		}
 		conn, err := net.DialTCP("tcp", nil, addr)
 		if err != nil {
-			fmt.Println(err)
+			//fmt.Println(err)
 			continue
 		}
 		//Send a request to get the ip and port of dataServer with our remote directory
@@ -272,15 +271,28 @@ func runApp() error {
 		sendMsg(conn, req)
 		response, err := getMsg(conn)
 		if err != nil {
-			fmt.Println(err)
+			//fmt.Println(err)
 			continue
 		}
 		fmt.Println(response)
+		dataServerInfo = response.Data
 		conn.Close()
 		break
 	}
+	//Connect to dataServer
+	dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dataServerConn, err := net.DialTCP("tcp", nil, dataServerAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	request, _ := createMsg("DesktopClient", "Testing", "TestingData")
+	sendMsg(dataServerConn, request)
 	for {
 		monitorFiles("/home/orestis/Downloads")
+		checkDeletedFiles()
 	}
 	//return nil
 }

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var m = map[string]time.Time{}
+var filesMap = map[string]string{} //key is the path of the file,value is modified time in string format
 
 func visit(p string, info os.FileInfo, err error) error {
 
@@ -17,16 +17,17 @@ func visit(p string, info os.FileInfo, err error) error {
 	}
 
 	if !info.IsDir() {
-		fileModifiedTime, prs := m[p]
+		fileModifiedTime, prs := filesMap[p]
 		if prs == false {
 			fmt.Println(p, " is a new file")
 			stats, _ := os.Stat(p)
-			m[p] = stats.ModTime()
+			filesMap[p] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
 		} else {
 			stats, _ := os.Stat(p)
-			if stats.ModTime() != fileModifiedTime {
+			if stats.ModTime().Format("2006-02-01 15:04:05.000 MST") != fileModifiedTime {
 				fmt.Println("FILE ", p, " MODIFIED")
-				m[p] = stats.ModTime()
+				filesMap[p] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
+				//Send updates to dataServer
 			}
 		}
 
@@ -37,6 +38,17 @@ func visit(p string, info os.FileInfo, err error) error {
 func monitorFiles(dropBoxDir string) {
 	filepath.Walk(dropBoxDir, visit)
 	time.Sleep(5 * time.Second)
+}
+
+func checkDeletedFiles() {
+	for filePath := range filesMap {
+		_, err := os.Stat(filePath)
+		if err != nil { //File deleted
+			fmt.Println(filePath, "deleted")
+			delete(filesMap, filePath)
+			//Send updates to dataServer
+		}
+	}
 }
 
 // ReadLines reads all lines from a file

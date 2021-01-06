@@ -68,6 +68,8 @@ func handleConn(conn net.Conn) {
 		switch request.Rtype {
 		case "createUser":
 			createUser(conn, request)
+		default:
+			fmt.Println(request)
 		}
 
 	}
@@ -223,7 +225,7 @@ func handleFileServers() {
 			} else {
 				//Start the file server for this directory
 				fileServerPath := filepath.Join(baseDir, entry.Name())
-				fmt.Println(fileServerPath)
+				fmt.Println(fileServerPath, port)
 				cmd := exec.Command("./fileServer", fileServerPath, fmt.Sprint(port))
 				cmd.Start()
 				serverEntry := fileServerEntry{cmd, fmt.Sprint(port)}

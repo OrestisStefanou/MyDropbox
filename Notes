@@ -1,14 +1,14 @@
 DesktopApp(Client):
--Runs in the background
--Connects to request server first.
--Request Server sends the network info of the DataServer that has his remote directory to connect to
+-Runs in the background     DONE
+-Connects to request server first.  DONE
+-Request Server sends the network info of the DataServer that has his remote directory to connect to    DONE
 -Connects to a DataServer
 -Checks for any new files or updates in exhisting ones
 -Checks if there is available space
 -Sends the updates to the server(if there is available space)
 
 RequestServer
--Routes the clients to the correct DataServer
+-Routes the clients to the correct DataServer   DONE
 
 DataServer
 -Gets the updates from the client and updates the client's remote directory
@@ -30,9 +30,12 @@ DATABASE DESIGN:
     ->DataServerID(primary Key)
     ->MaxCapacity(Of Users)
     ->IP Adress
-    ->HttpPort
+    ->HttpPort(REMOVE THIS)
     ->ListeningPort
 -Files Table
     ->Owner(foreing key from Users)
     ->FilePath(Including tha name of the file)(Primary Key)
     ->LastModified TIME
+
+RequestServer and httpServer will run in the same machine.Create a process that starts
+the request and http server and monitor them
