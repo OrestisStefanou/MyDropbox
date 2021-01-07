@@ -87,6 +87,27 @@ func installApp() error {
 		}
 		return ErrSudo
 	}
+	//Get the name of the current user to create the path of myDropbox dir
+	wd, err := os.Getwd()
+	mydropboxDir := filepath.Join(string(wd), "myDropbox")
+	//Create the dir
+	if err := os.MkdirAll(mydropboxDir, 0755); err != nil {
+		if !os.IsPermission(err) {
+			return err
+		}
+		return ErrSudo
+	}
+	//Write the path of myDropbox dir to the conf file
+	f, err := os.OpenFile("client.conf", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	if err != nil {
+		log.Fatalf("os.Open failed with '%s'\n", err)
+	}
+	_, err = f.Write([]byte(mydropboxDir))
+	if err != nil {
+		log.Fatal(err)
+	}
+	f.Close()
+
 	//Copy the configuration file to varDir
 	//Open the original conf file
 	original, err := os.Open("client.conf")
@@ -111,7 +132,7 @@ func installApp() error {
 	if err == nil {
 		return errors.New("Already installed")
 	}
-	f, err := os.OpenFile(initdFile, os.O_CREATE|os.O_WRONLY, 0755)
+	f, err = os.OpenFile(initdFile, os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		if !os.IsPermission(err) {
 			return err
@@ -245,13 +266,15 @@ func runApp() error {
 	//3.Get the file info from dataServer to initialize fileMap or load it from a file localy
 	//4.Check for updates and send them to the dataServer
 	fmt.Println("RUNNING")
-	//Read the username from conf file
+	//Read the username and myDropbox dir from conf file
 	confFilePath := filepath.Join(varDir, "client.conf")
 	lines, err := ReadLines(confFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	myUsername := lines[0]
+	mydropboxDir := lines[1]
+	fmt.Println(mydropboxDir)
 	var dataServerInfo string
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
 	for {
