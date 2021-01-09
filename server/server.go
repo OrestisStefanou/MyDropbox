@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -68,6 +69,17 @@ func handleConn(conn net.Conn) {
 		switch request.Rtype {
 		case "createUser":
 			createUser(conn, request)
+		case "Testing":
+			type mapEntry struct {
+				Filename string
+				ModTime  string
+			}
+			var entry mapEntry
+			err := json.Unmarshal([]byte(request.Data), &entry)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(entry)
 		default:
 			fmt.Println(request)
 		}

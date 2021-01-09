@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -311,10 +312,26 @@ func runApp() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	request, _ := createMsg("DesktopClient", "Testing", "TestingData")
+	//Test message
+	type mapEntry struct {
+		Filename string
+		ModTime  string
+	}
+	testData := mapEntry{
+		Filename: "hello.go",
+		ModTime:  "09-01-2021",
+	}
+	d, err := json.Marshal(&testData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(d))
+	request, _ := createMsg("DesktopClient", "Testing", string(d))
 	sendMsg(dataServerConn, request)
+	///////
+
 	for {
-		monitorFiles("/home/orestis/Downloads")
+		monitorFiles("/home/orestis/Downloads") //Change this to myDropboxDir
 		checkDeletedFiles()
 	}
 	//return nil
