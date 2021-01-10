@@ -39,3 +39,5 @@ DATABASE DESIGN:
 
 RequestServer and httpServer will run in the same machine.Create a process that starts
 the request and http server and monitor them
+
+Kill the fileServers processes that we spawn from DataServer

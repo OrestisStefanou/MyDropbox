@@ -38,6 +38,8 @@ func main() {
 	if err != nil {
 		log.Fatalln("Listener:", os.Args[1], err)
 	}
+	//Connect to the database
+	dbConnect("orestis", "Ore$tis1997", "myDropbox")
 	go handleFileServers()
 	for {
 		time.Sleep(time.Millisecond * 100)
@@ -69,12 +71,10 @@ func handleConn(conn net.Conn) {
 		switch request.Rtype {
 		case "createUser":
 			createUser(conn, request)
+		case "FilesMapInit":
+			sendFileInfo(conn, request)
 		case "Testing":
-			type mapEntry struct {
-				Filename string
-				ModTime  string
-			}
-			var entry mapEntry
+			var entry filemapEntry
 			err := json.Unmarshal([]byte(request.Data), &entry)
 			if err != nil {
 				log.Fatal(err)
@@ -85,6 +85,13 @@ func handleConn(conn net.Conn) {
 		}
 
 	}
+}
+
+//Send the files info of the user to desktop client
+func sendFileInfo(conn net.Conn, r netMsg) {
+	username := r.Data
+	fmt.Println(username)
+	sendUserFilesInfo(username, conn)
 }
 
 func createUser(conn net.Conn, r netMsg) {

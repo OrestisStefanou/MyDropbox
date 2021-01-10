@@ -313,11 +313,7 @@ func runApp() error {
 		log.Fatal(err)
 	}
 	//Test message
-	type mapEntry struct {
-		Filename string
-		ModTime  string
-	}
-	testData := mapEntry{
+	testData := filemapEntry{
 		Filename: "hello.go",
 		ModTime:  "09-01-2021",
 	}
@@ -326,10 +322,12 @@ func runApp() error {
 		log.Fatal(err)
 	}
 	fmt.Println(string(d))
-	request, _ := createMsg("DesktopClient", "Testing", string(d))
-	sendMsg(dataServerConn, request)
+	//request, _ := createMsg("DesktopClient", "Testing", string(d))
+	//sendMsg(dataServerConn, request)
 	///////
 
+	//Initialize filesMap
+	initializeFilesMap(dataServerConn, myUsername)
 	for {
 		monitorFiles("/home/orestis/Downloads") //Change this to myDropboxDir
 		checkDeletedFiles()

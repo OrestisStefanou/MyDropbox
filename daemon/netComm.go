@@ -16,6 +16,11 @@ type netMsg struct {
 	Data  string
 }
 
+type filemapEntry struct {
+	Filename string
+	ModTime  string
+}
+
 //Creates a message in JSON format
 func createMsg(from, rtype, data string) ([]byte, error) {
 	r := netMsg{

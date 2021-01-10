@@ -2,13 +2,37 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
 )
 
 var filesMap = map[string]string{} //key is the path of the file,value is modified time in string format
+
+func initializeFilesMap(conn net.Conn, myUsername string) {
+	request, err := createMsg("DesktopClient", "FilesMapInit", myUsername)
+	if err != nil {
+		return
+	}
+	sendMsg(conn, request)
+	for {
+		response, err := getMsg(conn)
+		if response.Rtype == "FilesComplete" {
+			fmt.Println("Got all the files info")
+			break
+		}
+		var entry filemapEntry
+		err = json.Unmarshal([]byte(response.Data), &entry)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		fmt.Println(entry)
+	}
+}
 
 func visit(p string, info os.FileInfo, err error) error {
 
