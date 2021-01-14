@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -44,6 +43,10 @@ var (
 	bin string
 	cmd string
 )
+
+var dataServerConn net.Conn
+var mydropboxDir string
+var myUsername string
 
 func init() {
 	p, err := filepath.Abs(os.Args[0])
@@ -92,7 +95,7 @@ func installApp() error {
 	wd, err := os.Getwd()
 	mydropboxDir := filepath.Join(string(wd), "myDropbox")
 	//Create the dir
-	if err := os.MkdirAll(mydropboxDir, 0755); err != nil {
+	if err := os.MkdirAll(mydropboxDir, 0777); err != nil {
 		if !os.IsPermission(err) {
 			return err
 		}
@@ -273,8 +276,8 @@ func runApp() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	myUsername := lines[0]
-	mydropboxDir := lines[1]
+	myUsername = lines[0]
+	mydropboxDir = lines[1]
 	fmt.Println(mydropboxDir)
 	var dataServerInfo string
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
@@ -298,7 +301,7 @@ func runApp() error {
 			//fmt.Println(err)
 			continue
 		}
-		fmt.Println(response)
+		//fmt.Println(response)
 		dataServerInfo = response.Data
 		conn.Close()
 		break
@@ -308,28 +311,15 @@ func runApp() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dataServerConn, err := net.DialTCP("tcp", nil, dataServerAddr)
+	dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//Test message
-	testData := filemapEntry{
-		Filename: "hello.go",
-		ModTime:  "09-01-2021",
-	}
-	d, err := json.Marshal(&testData)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(d))
-	//request, _ := createMsg("DesktopClient", "Testing", string(d))
-	//sendMsg(dataServerConn, request)
-	///////
 
 	//Initialize filesMap
-	initializeFilesMap(dataServerConn, myUsername)
+	initializeFilesMap()
 	for {
-		monitorFiles("/home/orestis/Downloads") //Change this to myDropboxDir
+		monitorFiles(mydropboxDir) //Change this to myDropboxDir
 		checkDeletedFiles()
 	}
 	//return nil

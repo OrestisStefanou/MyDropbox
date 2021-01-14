@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -67,19 +66,15 @@ func handleConn(conn net.Conn) {
 			log.Println("<- Message error:", err)
 			continue
 		}
-		fmt.Printf("netMsg struct parsed from JSON: %#v\n", request)
+		//fmt.Printf("netMsg struct parsed from JSON: %#v\n", request)
 		switch request.Rtype {
 		case "createUser":
 			createUser(conn, request)
 		case "FilesMapInit":
 			sendFileInfo(conn, request)
-		case "Testing":
-			var entry filemapEntry
-			err := json.Unmarshal([]byte(request.Data), &entry)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println(entry)
+		case "NewFile":
+			//Create a new file and update the database
+			createUserFile(conn, request)
 		default:
 			fmt.Println(request)
 		}

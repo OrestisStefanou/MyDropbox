@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -45,9 +47,61 @@ func sendUserFilesInfo(username string, conn net.Conn) {
 		}
 		response, err := createMsg("DataServer", "FileMapEntry", string(d))
 		sendMsg(conn, response)
+		getMsg(conn)
 	}
 	response, _ := createMsg("DataServer", "FilesComplete", "")
 	sendMsg(conn, response)
+}
+
+//Create a new user's file
+func createUserFile(conn net.Conn, request netMsg) {
+	username := request.From
+	var fileInfo filemapEntry
+	err := json.Unmarshal([]byte(request.Data), &fileInfo)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	dir, file := filepath.Split(fileInfo.Filename) //Get the parents
+	if dir != "" {
+		newDir := filepath.Join(baseDir, username, dir)
+		fmt.Println(newDir)
+	} else {
+		newFilePath := filepath.Join(baseDir, username, file)
+		fmt.Println(newFilePath)
+		getFile(conn, newFilePath)
+		stmt, err := db.Prepare("Insert Files SET Filepath=?,Owner=?,LastModified=?")
+		checkErr(err)
+		_, err = stmt.Exec(file, username, fileInfo.ModTime)
+		checkErr(err)
+	}
+	//Send a message that file created
+	response, err := createMsg("DataServer", "OK", "")
+	sendMsg(conn, response)
+}
+
+func getFile(conn net.Conn, path string) {
+	f, err := os.Create(path)
+	check(err)
+	defer f.Close()
+	response, err := createMsg("DataServer", "SendFile", "")
+	sendMsg(conn, response)
+	for {
+		msg, err := getMsg(conn)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		if msg.Rtype == "Finished" {
+			break
+		}
+		fileLine := msg.Data
+		_, err = f.WriteString(fileLine)
+		_, err = f.WriteString("\n")
+		//Send a message that we got the line to send the next one
+		response, _ := createMsg("DataServer", "OK", "")
+		sendMsg(conn, response)
+	}
 }
 
 func checkErr(err error) {

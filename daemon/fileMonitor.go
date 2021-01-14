@@ -12,14 +12,14 @@ import (
 
 var filesMap = map[string]string{} //key is the path of the file,value is modified time in string format
 
-func initializeFilesMap(conn net.Conn, myUsername string) {
+func initializeFilesMap() {
 	request, err := createMsg("DesktopClient", "FilesMapInit", myUsername)
 	if err != nil {
 		return
 	}
-	sendMsg(conn, request)
+	sendMsg(dataServerConn, request)
 	for {
-		response, err := getMsg(conn)
+		response, err := getMsg(dataServerConn)
 		if response.Rtype == "FilesComplete" {
 			fmt.Println("Got all the files info")
 			break
@@ -31,6 +31,10 @@ func initializeFilesMap(conn net.Conn, myUsername string) {
 			break
 		}
 		fmt.Println(entry)
+		file := filepath.Join(mydropboxDir, entry.Filename) //REPLACE THIS WITH myDropboxdir
+		filesMap[file] = entry.ModTime
+		msg, _ := createMsg("DesktopClient", "GotIt", "")
+		sendMsg(dataServerConn, msg)
 	}
 }
 
@@ -43,9 +47,30 @@ func visit(p string, info os.FileInfo, err error) error {
 	if !info.IsDir() {
 		fileModifiedTime, prs := filesMap[p]
 		if prs == false {
-			fmt.Println(p, " is a new file")
+			rel, err := filepath.Rel(mydropboxDir, p) //Replace this with myDropboxDir
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(rel, " is a new file")
 			stats, _ := os.Stat(p)
-			filesMap[p] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
+			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
+			filesMap[p] = modTime
+			//Send the new file to the dataServer
+			fileInfo := filemapEntry{rel, modTime}
+			d, err := json.Marshal(&fileInfo)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			request, err := createMsg(myUsername, "NewFile", string(d))
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			sendMsg(dataServerConn, request)
+			getMsg(dataServerConn)
+			uploadFile(dataServerConn, p)
+			getMsg(dataServerConn)
 		} else {
 			stats, _ := os.Stat(p)
 			if stats.ModTime().Format("2006-02-01 15:04:05.000 MST") != fileModifiedTime {
@@ -57,6 +82,27 @@ func visit(p string, info os.FileInfo, err error) error {
 
 	}
 	return nil
+}
+
+func uploadFile(conn net.Conn, path string) {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0666)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		request, _ := createMsg(myUsername, "Line", line)
+		sendMsg(conn, request)
+		getMsg(conn)
+	}
+	request, _ := createMsg(myUsername, "Finished", "")
+	sendMsg(conn, request)
+	if err = scanner.Err(); err != nil {
+		return
+	}
+
 }
 
 func monitorFiles(dropBoxDir string) {
