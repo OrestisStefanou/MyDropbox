@@ -75,6 +75,8 @@ func handleConn(conn net.Conn) {
 		case "NewFile":
 			//Create a new file and update the database
 			createUserFile(conn, request)
+		case "UpdateFile":
+			updateUserFile(conn, request)
 		default:
 			fmt.Println(request)
 		}

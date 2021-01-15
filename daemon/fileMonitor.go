@@ -31,8 +31,7 @@ func initializeFilesMap() {
 			break
 		}
 		fmt.Println(entry)
-		file := filepath.Join(mydropboxDir, entry.Filename) //REPLACE THIS WITH myDropboxdir
-		filesMap[file] = entry.ModTime
+		filesMap[entry.Filename] = entry.ModTime
 		msg, _ := createMsg("DesktopClient", "GotIt", "")
 		sendMsg(dataServerConn, msg)
 	}
@@ -45,16 +44,16 @@ func visit(p string, info os.FileInfo, err error) error {
 	}
 
 	if !info.IsDir() {
-		fileModifiedTime, prs := filesMap[p]
+		rel, err := filepath.Rel(mydropboxDir, p) //Replace this with myDropboxDir
+		if err != nil {
+			panic(err)
+		}
+		fileModifiedTime, prs := filesMap[rel]
 		if prs == false {
-			rel, err := filepath.Rel(mydropboxDir, p) //Replace this with myDropboxDir
-			if err != nil {
-				panic(err)
-			}
 			fmt.Println(rel, " is a new file")
 			stats, _ := os.Stat(p)
 			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
-			filesMap[p] = modTime
+			filesMap[rel] = modTime
 			//Send the new file to the dataServer
 			fileInfo := filemapEntry{rel, modTime}
 			d, err := json.Marshal(&fileInfo)
@@ -73,10 +72,26 @@ func visit(p string, info os.FileInfo, err error) error {
 			getMsg(dataServerConn)
 		} else {
 			stats, _ := os.Stat(p)
-			if stats.ModTime().Format("2006-02-01 15:04:05.000 MST") != fileModifiedTime {
+			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
+			if modTime != fileModifiedTime {
 				fmt.Println("FILE ", p, " MODIFIED")
-				filesMap[p] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
+				filesMap[rel] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
 				//Send updates to dataServer
+				fileInfo := filemapEntry{rel, modTime}
+				d, err := json.Marshal(&fileInfo)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				request, err := createMsg(myUsername, "UpdateFile", string(d))
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				sendMsg(dataServerConn, request)
+				getMsg(dataServerConn)
+				uploadFile(dataServerConn, p)
+				getMsg(dataServerConn)
 			}
 		}
 
@@ -111,7 +126,8 @@ func monitorFiles(dropBoxDir string) {
 }
 
 func checkDeletedFiles() {
-	for filePath := range filesMap {
+	for key := range filesMap {
+		filePath := filepath.Join(mydropboxDir, key)
 		_, err := os.Stat(filePath)
 		if err != nil { //File deleted
 			fmt.Println(filePath, "deleted")

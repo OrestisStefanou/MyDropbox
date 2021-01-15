@@ -65,17 +65,48 @@ func createUserFile(conn net.Conn, request netMsg) {
 	dir, file := filepath.Split(fileInfo.Filename) //Get the parents
 	if dir != "" {
 		newDir := filepath.Join(baseDir, username, dir)
-		fmt.Println(newDir)
+		//Create the parent directories
+		err := os.MkdirAll(newDir, 0755)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		newFilePath := filepath.Join(newDir, file)
+		fmt.Println(newFilePath)
+		getFile(conn, newFilePath)
+		stmt, err := db.Prepare("Insert Files SET Filepath=?,Owner=?,LastModified=?")
+		checkErr(err)
+		_, err = stmt.Exec(fileInfo.Filename, username, fileInfo.ModTime)
+		checkErr(err)
 	} else {
 		newFilePath := filepath.Join(baseDir, username, file)
 		fmt.Println(newFilePath)
 		getFile(conn, newFilePath)
 		stmt, err := db.Prepare("Insert Files SET Filepath=?,Owner=?,LastModified=?")
 		checkErr(err)
-		_, err = stmt.Exec(file, username, fileInfo.ModTime)
+		_, err = stmt.Exec(fileInfo.Filename, username, fileInfo.ModTime)
 		checkErr(err)
 	}
 	//Send a message that file created
+	response, err := createMsg("DataServer", "OK", "")
+	sendMsg(conn, response)
+}
+
+func updateUserFile(conn net.Conn, request netMsg) {
+	username := request.From
+	var fileInfo filemapEntry
+	err := json.Unmarshal([]byte(request.Data), &fileInfo)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	path := filepath.Join(baseDir, username, fileInfo.Filename)
+	fmt.Println("Updating ", path)
+	getFile(conn, path)
+	stmt, err := db.Prepare("UPDATE Files set LastModified=? WHERE Filepath=? AND Owner=?")
+	checkErr(err)
+	_, err = stmt.Exec(fileInfo.ModTime, fileInfo.Filename, username)
+	checkErr(err)
 	response, err := createMsg("DataServer", "OK", "")
 	sendMsg(conn, response)
 }
