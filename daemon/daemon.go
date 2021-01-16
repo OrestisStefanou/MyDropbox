@@ -12,6 +12,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
+
+	"github.com/ctcpip/notifize"
 )
 
 const (
@@ -319,7 +322,15 @@ func runApp() error {
 	//Initialize filesMap
 	initializeFilesMap()
 	for {
-		monitorFiles(mydropboxDir) //Change this to myDropboxDir
+		dropboxDirSize, _ := dirSize(mydropboxDir)
+		if dropboxDirSize > 5000 { //if size of directory is more than 5GB
+			//inform the user
+			notifize.Display("Mydropbox", "Not enough space,please remove some files", false, "")
+			fmt.Println("Not available space ")
+			time.Sleep(time.Minute * 10)
+			continue
+		}
+		monitorFiles(mydropboxDir)
 		checkDeletedFiles()
 	}
 	//return nil
