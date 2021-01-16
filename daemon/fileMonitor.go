@@ -131,8 +131,11 @@ func checkDeletedFiles() {
 		_, err := os.Stat(filePath)
 		if err != nil { //File deleted
 			fmt.Println(filePath, "deleted")
-			delete(filesMap, filePath)
+			delete(filesMap, key)
 			//Send updates to dataServer
+			request, _ := createMsg(myUsername, "FileDeleted", key)
+			sendMsg(dataServerConn, request)
+			getMsg(dataServerConn)
 		}
 	}
 }

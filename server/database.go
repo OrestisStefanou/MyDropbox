@@ -111,6 +111,31 @@ func updateUserFile(conn net.Conn, request netMsg) {
 	sendMsg(conn, response)
 }
 
+func deleteUserFile(conn net.Conn, request netMsg) {
+	username := request.From
+	filename := request.Data
+	path := filepath.Join(baseDir, username, filename)
+	err := os.Remove(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Printf("os.Remove failed because file doesn't exist\n")
+		} else {
+			fmt.Printf("os.Remove failed with '%s'\n", err)
+		}
+		return
+	}
+	dir, _ := filepath.Split(path)
+	os.Remove(dir) //Delete the directory of the file if is empty
+
+	stmt, err := db.Prepare("DELETE FROM Files WHERE filepath=? AND Owner=?")
+	checkErr(err)
+
+	_, err = stmt.Exec(filename, username)
+	checkErr(err)
+	response, err := createMsg("DataServer", "OK", "")
+	sendMsg(conn, response)
+}
+
 func getFile(conn net.Conn, path string) {
 	f, err := os.Create(path)
 	check(err)

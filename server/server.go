@@ -77,6 +77,8 @@ func handleConn(conn net.Conn) {
 			createUserFile(conn, request)
 		case "UpdateFile":
 			updateUserFile(conn, request)
+		case "FileDeleted":
+			deleteUserFile(conn, request)
 		default:
 			fmt.Println(request)
 		}
