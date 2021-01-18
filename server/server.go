@@ -70,6 +70,8 @@ func handleConn(conn net.Conn) {
 		switch request.Rtype {
 		case "createUser":
 			createUser(conn, request)
+		case "UserLogin":
+			userLogin(conn, request)
 		case "FilesMapInit":
 			sendFileInfo(conn, request)
 		case "NewFile":
@@ -84,6 +86,31 @@ func handleConn(conn net.Conn) {
 		}
 
 	}
+}
+
+//Send the listening port of dataServer for the user
+func userLogin(conn net.Conn, r netMsg) {
+	username := r.Data
+	mu.RLock()
+	fileServerInfo, prs := fileServers[username]
+	if !prs {
+		fmt.Println("User's data server listening port is not in the map!")
+		response, err := createMsg("DataServer", "Error", "")
+		if err != nil {
+			fmt.Println("Problem at creating the message")
+			return
+		}
+		sendMsg(conn, response)
+	}
+	mu.RUnlock()
+	fileServerPort := fileServerInfo.procPort
+	//Respond to the http server the dataServer Port
+	response, err := createMsg("DataServer", "OK", fileServerPort)
+	if err != nil {
+		fmt.Println("Problem at creating the message")
+		return
+	}
+	sendMsg(conn, response)
 }
 
 //Send the files info of the user to desktop client
@@ -158,7 +185,7 @@ func createZip(userDir, username string) error {
 	f.Close()
 
 	//Create the zip file
-	filesToZip := []string{"client.conf", "server"}
+	filesToZip := []string{"client.conf", "daemon"}
 	output := filepath.Join(userDir, "myDropboxApp")
 	if err := ZipFiles(output, filesToZip); err != nil {
 		return err

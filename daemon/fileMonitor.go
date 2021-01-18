@@ -132,7 +132,7 @@ func dirSize(path string) (int64, error) {
 		}
 		return err
 	})
-	return size, err
+	return size / 1000, err
 }
 
 func monitorFiles(dropBoxDir string) {

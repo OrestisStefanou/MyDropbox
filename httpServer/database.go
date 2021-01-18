@@ -100,6 +100,21 @@ func getUser(username string) (user, error) {
 	return userInfo, returnErr
 }
 
+func getDataServer(id int) (dataServerInfo, error) {
+	rows, err := db.Query("SELECT * FROM DataServers WHERE ServerId=?", id)
+	serverInfo := dataServerInfo{}
+	if err != nil {
+		return serverInfo, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&serverInfo.serverID, &serverInfo.maxCapacity, &serverInfo.ipAddr, &serverInfo.httpPort, &serverInfo.listeningPort, &serverInfo.available)
+		if err != nil {
+			return serverInfo, err
+		}
+	}
+	return serverInfo, nil
+}
+
 func checkErr(err error) {
 	if err != nil {
 		panic(err)

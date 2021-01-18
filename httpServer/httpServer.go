@@ -22,6 +22,7 @@ func main() {
 	dbConnect("orestis", "Ore$tis1997", "myDropbox")
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/signup", signUpHandler)
+	http.HandleFunc("/signIn", signInHandler)
 	http.ListenAndServe(":8080", nil)
 	//Start a go routine to handle desktop client connections
 }
@@ -34,6 +35,62 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		t.Execute(w, testInfo)
 	} else {
 
+	}
+}
+
+func signInHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		t, err := template.ParseFiles("signIn.html")
+		checkErr(err)
+		t.Execute(w, nil)
+	} else {
+		r.ParseForm()
+		userInfo := user{}
+		userInfo.username = r.Form.Get("entered_username")
+		userInfo.password = r.Form.Get("entered_pass")
+		//Check if a user with this username already exists
+		result, err := getUser(userInfo.username)
+		if err != nil {
+			//Send error html page
+			t, err := template.ParseFiles("errorPage.html")
+			check(err)
+			errorMsg := errorMessage{"Wrong username given!"}
+			t.Execute(w, errorMsg)
+		} else {
+			if userInfo.password != result.password {
+				//Send error html page
+				t, err := template.ParseFiles("errorPage.html")
+				check(err)
+				errorMsg := errorMessage{"Wrong password given!"}
+				t.Execute(w, errorMsg)
+			}
+			serverInfo, _ := getDataServer(result.dataServerID)
+			//Send a request to dataServer to get listening port of fileServer for the user
+			addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%s", serverInfo.ipAddr, serverInfo.listeningPort))
+			if err != nil {
+				log.Fatalln("Invalid address:", serverInfo.ipAddr, err)
+			}
+			conn, err := net.DialTCP("tcp", nil, addr)
+			if err != nil {
+				log.Fatalln("-> Connection:", err)
+			}
+			request, err := createMsg("httpServer", "UserLogin", userInfo.username)
+			sendMsg(conn, request)
+			response, err := getMsg(conn)
+			fmt.Println("Response is:", response.Rtype)
+			if response.Rtype == "Error" {
+				//Send error html page
+				t, err := template.ParseFiles("errorPage.html")
+				check(err)
+				errorMsg := errorMessage{"Something went wrong!"}
+				t.Execute(w, errorMsg)
+			}
+			serverURL := fmt.Sprintf("http://%s:%s/", serverInfo.ipAddr, response.Data) //Create fileServer address
+			fileServer := FileServerInfo{serverURL}
+			t, err := template.ParseFiles("welcome.html")
+			check(err)
+			t.Execute(w, fileServer)
+		}
 	}
 }
 

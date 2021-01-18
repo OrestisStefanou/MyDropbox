@@ -94,7 +94,7 @@ func installApp() error {
 		}
 		return ErrSudo
 	}
-	//Get the name of the current user to create the path of myDropbox dir
+	//Get the name of the current directory to create the path of myDropbox dir
 	wd, err := os.Getwd()
 	mydropboxDir := filepath.Join(string(wd), "myDropbox")
 	//Create the dir
@@ -270,8 +270,6 @@ func stopApp() (err error) {
 }
 
 func runApp() error {
-	//3.Get the file info from dataServer to initialize fileMap or load it from a file localy
-	//4.Check for updates and send them to the dataServer
 	fmt.Println("RUNNING")
 	//Read the username and myDropbox dir from conf file
 	confFilePath := filepath.Join(varDir, "client.conf")
@@ -319,11 +317,12 @@ func runApp() error {
 		log.Fatal(err)
 	}
 
-	//Initialize filesMap
+	//Get the file info from dataServer to initialize fileMap
 	initializeFilesMap()
 	for {
 		dropboxDirSize, _ := dirSize(mydropboxDir)
-		if dropboxDirSize > 5000 { //if size of directory is more than 5GB
+		fmt.Println("Current folder size:", dropboxDirSize, "Kb")
+		if dropboxDirSize > 5000 { //if size of directory is more than 5GB(5000 Kb)
 			//inform the user
 			notifize.Display("Mydropbox", "Not enough space,please remove some files", false, "")
 			fmt.Println("Not available space ")
