@@ -83,6 +83,8 @@ func handleConn(conn net.Conn) {
 			deleteUserFile(conn, request)
 		default:
 			fmt.Println(request)
+			response, _ := createMsg("DataServer", "Response", "Testing")
+			sendMsg(conn, response)
 		}
 
 	}
