@@ -6,14 +6,41 @@ import socket
 import database
 
 app = Flask(__name__)
+app.secret_key = "secretKey"
 
 @app.route("/home")
 @app.route("/")
 def home():
+    if "username" in session:
+        return render_template("welcomePage.html",Username = session["username"])
     return render_template("index.html")
+
+@app.route("/signin",methods=["POST","GET"])
+def signin():
+    if "username" in session:
+        return render_template("welcomePage.html",Username = session["username"])
+    if request.method == "POST":
+        username = request.form['entered_username']
+        password = request.form['entered_pass']
+        #Check if there is a user with this username
+        userInfo = database.getUser(username)
+        if userInfo:
+            if password != userInfo.password:
+                return "<h1>Wrong password"
+                #SEND TO ERROR PAGE
+            session["username"] = userInfo.username
+            session["dataServerID"] = userInfo.dataServerID
+            return render_template("welcomePage.html",Username=username)
+        else:
+            return "<h1>Wrong username</h1>"
+            #SEND TO ERROR PAGE
+    else:
+        return render_template("signIn.html")
 
 @app.route("/signup",methods=["POST","GET"])
 def signup():
+    if "username" in session:
+        return render_template("welcomePage.html",Username = session["username"])
     if request.method == "POST":
         #Handle the form
         username = request.form['entered_username']
@@ -22,7 +49,7 @@ def signup():
         password2 = request.form['entered_pass2']
         #Check if passwords match
         if password != password2:
-            print("Passwords do not match")
+            return "<h1>Passwords do not match</h1>"
             #SEND TO AN ERROR PAGE
         #Check if a user with this username already exists
         if database.getUser(username) == None :
@@ -41,12 +68,34 @@ def signup():
             response = s.recv(1024).decode()
             data = json.loads(response)
             print(data)
-            #Check the response and do some shit with it
+            if data["Rtype"] == "OK":
+                #Create a user in the database\
+                database.addUser(userInfo)
+                #Send them to loginPage
+                session["username"] = userInfo.username
+                session["dataServerID"] = userInfo.dataServerID
+                return render_template("welcomePage.html",Username=userInfo.username)
+            
         else:
-            print("A username with this username already exists!")
+            return "<h1>A username with this username already exists!</h1>"
             #Send to error Page
     else:
         return render_template("signUp.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("username",None)
+    session.pop("dataServerID",None)
+    return redirect(url_for("home"))
+
+@app.route("/download")
+def download():
+    path = "./databaseCopy.sql"
+    return send_file(path, as_attachment=True)
+
+@app.route("/user/<name>")
+def user(name):
+    return f"<h1>{name}</h1>"
 
 if __name__ == "__main__":
     app.run(debug=True)

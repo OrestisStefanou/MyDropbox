@@ -18,26 +18,24 @@
     <img src="/static/img/logo.png" width="250" height="500" alt="Logo" class="img-thumbnail">
     </a>
 
-    <h1 style="color:white;">Weclome to MyDropbox</h1>
+    <h1 style="color:white;">Welcome {{Username}}</h1>
 
     <ul class="nav">
         <li class="nav-item">
-          <a class="nav-link active" href="{{ url_for('home') }}" style="color:white;background-color:green;">Home Page</a>
+          <a class="nav-link active" href="#" style="color:white;background-color:green;">Go to my Files</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('signup') }}" style="color:white;background-color:green;">Sign Up</a>
+          <a class="nav-link" href="{{ url_for('signup') }}" style="color:white;background-color:green;">Edit my profile</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('signin') }}" style="color:white;background-color:green;">Sign In</a>
+          <a class="nav-link" href="{{ url_for('logout') }}" style="color:white;background-color:green;">Log Out</a>
         </li>
       </ul>
 
     <div class="container">
         <div class="row">
           <div class="col">
-            <h1 style="color:white;">What is my Dropbox?<br>
-            MyDropbox provides you with 5GB free cloud storage to save your code files!
-            </h1>
+
           </div>
           <div class="col">
             <img src="/static/img/homeImg1.jpg" alt="" width="600" height="500">
