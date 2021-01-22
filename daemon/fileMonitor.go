@@ -14,16 +14,25 @@ import (
 
 var filesMap = map[string]string{} //key is the path of the file,value is modified time in string format
 
-func initializeFilesMap() {
+func connectToDataServer() {
 	//Connect to dataServer
 	dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
 	if err != nil {
 		log.Fatal(err)
 	}
-	dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
-	if err != nil {
-		log.Fatal(err)
+	for {
+		dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
+		if err != nil { //If there is no internet connection loop until we are back online
+			time.Sleep(time.Minute * 1)
+			continue
+		}
+		break
 	}
+}
+
+func initializeFilesMap() {
+	//Connect to dataServer
+	connectToDataServer()
 	request, err := createMsg("DesktopClient", "FilesMapInit", myUsername)
 	if err != nil {
 		return
@@ -63,14 +72,7 @@ func visit(p string, info os.FileInfo, err error) error {
 		fileModifiedTime, prs := filesMap[rel]
 		if prs == false {
 			//Connect to dataServer
-			dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
-			if err != nil {
-				log.Fatal(err)
-			}
-			dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
-			if err != nil {
-				log.Fatal(err)
-			}
+			connectToDataServer()
 			fmt.Println(rel, " is a new file")
 			stats, _ := os.Stat(p)
 			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
@@ -88,7 +90,7 @@ func visit(p string, info os.FileInfo, err error) error {
 				return err
 			}
 			sendMsg(dataServerConn, request)
-			getMsg(dataServerConn)
+			getMsg(dataServerConn) //Just for message sychronization with the dataServer
 			fileUpload(dataServerConn, p)
 			dataServerConn.Close()
 		} else {
@@ -96,14 +98,7 @@ func visit(p string, info os.FileInfo, err error) error {
 			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
 			if modTime != fileModifiedTime {
 				//Connect to dataServer
-				dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
-				if err != nil {
-					log.Fatal(err)
-				}
-				dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
-				if err != nil {
-					log.Fatal(err)
-				}
+				connectToDataServer()
 				fmt.Println("FILE ", p, " MODIFIED")
 				filesMap[rel] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
 				//Send updates to dataServer
@@ -119,7 +114,7 @@ func visit(p string, info os.FileInfo, err error) error {
 					return err
 				}
 				sendMsg(dataServerConn, request)
-				getMsg(dataServerConn)
+				getMsg(dataServerConn) //Just for message sychronization with the dataServer
 				fileUpload(dataServerConn, p)
 				dataServerConn.Close()
 			}
@@ -129,27 +124,7 @@ func visit(p string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func uploadFile(conn net.Conn, path string) {
-	file, err := os.OpenFile(path, os.O_RDONLY, 0666)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		request, _ := createMsg(myUsername, "Line", line)
-		sendMsg(conn, request)
-		getMsg(conn)
-	}
-	request, _ := createMsg(myUsername, "Finished", "")
-	sendMsg(conn, request)
-	if err = scanner.Err(); err != nil {
-		return
-	}
-
-}
-
+//Upload a file to the DataServer
 func fileUpload(conn net.Conn, path string) {
 	//Open file to upload
 	file, err := os.Open(path)
@@ -166,7 +141,7 @@ func fileUpload(conn net.Conn, path string) {
 	}
 }
 
-//Get the size of path directory
+//Get the size of path directory in KB
 func dirSize(path string) (int64, error) {
 	var size int64
 	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
@@ -192,14 +167,7 @@ func checkDeletedFiles() {
 		_, err := os.Stat(filePath)
 		if err != nil { //File deleted
 			//Connect to dataServer
-			dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
-			if err != nil {
-				log.Fatal(err)
-			}
-			dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
-			if err != nil {
-				log.Fatal(err)
-			}
+			connectToDataServer()
 			fmt.Println(filePath, "deleted")
 			delete(filesMap, key)
 			//Send updates to dataServer

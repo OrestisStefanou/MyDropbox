@@ -47,9 +47,10 @@ var (
 	cmd string
 )
 
-var dataServerConn net.Conn
-var dataServerInfo string
-var mydropboxDir string
+// global variables
+var dataServerConn net.Conn //DataServer socket
+var dataServerInfo string   //DataServer network information
+var mydropboxDir string     //Directory to monitor
 var myUsername string
 
 func init() {
@@ -99,7 +100,7 @@ func installApp() error {
 	wd, err := os.Getwd()
 	mydropboxDir := filepath.Join(string(wd), "myDropbox")
 	//Create the dir
-	if err := os.MkdirAll(mydropboxDir, 0777); err != nil {
+	if err := os.MkdirAll(mydropboxDir, 0755); err != nil {
 		if !os.IsPermission(err) {
 			return err
 		}
@@ -155,6 +156,7 @@ func installApp() error {
 	return nil
 }
 
+///Update this to delete the folder created in /var directory
 func uninstallApp() error {
 	_, err := os.Stat(initdFile)
 	if err != nil && os.IsNotExist(err) {
@@ -293,6 +295,7 @@ func runApp() error {
 		conn, err := net.DialTCP("tcp", nil, addr)
 		if err != nil {
 			//fmt.Println(err)
+			time.Sleep(time.Minute * 1)
 			continue
 		}
 		//Send a request to get the ip and port of dataServer with our remote directory
