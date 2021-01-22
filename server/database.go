@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -73,7 +74,7 @@ func createUserFile(conn net.Conn, request netMsg) {
 		}
 		newFilePath := filepath.Join(newDir, file)
 		fmt.Println(newFilePath)
-		getFile(conn, newFilePath)
+		recieveFile(conn, newFilePath)
 		stmt, err := db.Prepare("Insert Files SET Filepath=?,Owner=?,LastModified=?")
 		checkErr(err)
 		_, err = stmt.Exec(fileInfo.Filename, username, fileInfo.ModTime)
@@ -81,7 +82,8 @@ func createUserFile(conn net.Conn, request netMsg) {
 	} else {
 		newFilePath := filepath.Join(baseDir, username, file)
 		fmt.Println(newFilePath)
-		getFile(conn, newFilePath)
+		recieveFile(conn, newFilePath)
+		fmt.Println("GOT THE FILE")
 		stmt, err := db.Prepare("Insert Files SET Filepath=?,Owner=?,LastModified=?")
 		checkErr(err)
 		_, err = stmt.Exec(fileInfo.Filename, username, fileInfo.ModTime)
@@ -102,7 +104,7 @@ func updateUserFile(conn net.Conn, request netMsg) {
 	}
 	path := filepath.Join(baseDir, username, fileInfo.Filename)
 	fmt.Println("Updating ", path)
-	getFile(conn, path)
+	recieveFile(conn, path)
 	stmt, err := db.Prepare("UPDATE Files set LastModified=? WHERE Filepath=? AND Owner=?")
 	checkErr(err)
 	_, err = stmt.Exec(fileInfo.ModTime, fileInfo.Filename, username)
@@ -157,6 +159,24 @@ func getFile(conn net.Conn, path string) {
 		//Send a message that we got the line to send the next one
 		response, _ := createMsg("DataServer", "OK", "")
 		sendMsg(conn, response)
+	}
+}
+
+func recieveFile(conn net.Conn, path string) {
+	//Create the file
+	f, err := os.Create(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	response, err := createMsg("DataServer", "SendFile", "")
+	sendMsg(conn, response)
+	//Accept file from client and write to new file
+	_, err = io.Copy(f, conn)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 }
 

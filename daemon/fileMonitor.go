@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -13,6 +15,15 @@ import (
 var filesMap = map[string]string{} //key is the path of the file,value is modified time in string format
 
 func initializeFilesMap() {
+	//Connect to dataServer
+	dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
 	request, err := createMsg("DesktopClient", "FilesMapInit", myUsername)
 	if err != nil {
 		return
@@ -35,6 +46,7 @@ func initializeFilesMap() {
 		msg, _ := createMsg("DesktopClient", "GotIt", "")
 		sendMsg(dataServerConn, msg)
 	}
+	dataServerConn.Close()
 }
 
 func visit(p string, info os.FileInfo, err error) error {
@@ -50,6 +62,15 @@ func visit(p string, info os.FileInfo, err error) error {
 		}
 		fileModifiedTime, prs := filesMap[rel]
 		if prs == false {
+			//Connect to dataServer
+			dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
+			if err != nil {
+				log.Fatal(err)
+			}
+			dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
 			fmt.Println(rel, " is a new file")
 			stats, _ := os.Stat(p)
 			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
@@ -68,12 +89,21 @@ func visit(p string, info os.FileInfo, err error) error {
 			}
 			sendMsg(dataServerConn, request)
 			getMsg(dataServerConn)
-			uploadFile(dataServerConn, p)
-			getMsg(dataServerConn)
+			fileUpload(dataServerConn, p)
+			dataServerConn.Close()
 		} else {
 			stats, _ := os.Stat(p)
 			modTime := stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
 			if modTime != fileModifiedTime {
+				//Connect to dataServer
+				dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
+				if err != nil {
+					log.Fatal(err)
+				}
+				dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
+				if err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println("FILE ", p, " MODIFIED")
 				filesMap[rel] = stats.ModTime().Format("2006-02-01 15:04:05.000 MST")
 				//Send updates to dataServer
@@ -90,8 +120,8 @@ func visit(p string, info os.FileInfo, err error) error {
 				}
 				sendMsg(dataServerConn, request)
 				getMsg(dataServerConn)
-				uploadFile(dataServerConn, p)
-				getMsg(dataServerConn)
+				fileUpload(dataServerConn, p)
+				dataServerConn.Close()
 			}
 		}
 
@@ -120,6 +150,22 @@ func uploadFile(conn net.Conn, path string) {
 
 }
 
+func fileUpload(conn net.Conn, path string) {
+	//Open file to upload
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+	//Upload
+	_, err = io.Copy(conn, file)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
 //Get the size of path directory
 func dirSize(path string) (int64, error) {
 	var size int64
@@ -145,14 +191,25 @@ func checkDeletedFiles() {
 		filePath := filepath.Join(mydropboxDir, key)
 		_, err := os.Stat(filePath)
 		if err != nil { //File deleted
+			//Connect to dataServer
+			dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
+			if err != nil {
+				log.Fatal(err)
+			}
+			dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
 			fmt.Println(filePath, "deleted")
 			delete(filesMap, key)
 			//Send updates to dataServer
 			request, _ := createMsg(myUsername, "FileDeleted", key)
 			sendMsg(dataServerConn, request)
 			getMsg(dataServerConn)
+			dataServerConn.Close()
 		}
 	}
+
 }
 
 // ReadLines reads all lines from a file

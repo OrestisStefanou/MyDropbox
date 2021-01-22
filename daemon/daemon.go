@@ -48,6 +48,7 @@ var (
 )
 
 var dataServerConn net.Conn
+var dataServerInfo string
 var mydropboxDir string
 var myUsername string
 
@@ -280,7 +281,7 @@ func runApp() error {
 	myUsername = lines[0]
 	mydropboxDir = lines[1]
 	fmt.Println(mydropboxDir)
-	var dataServerInfo string
+
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
 	for {
 		//Connect to router server to get the info of the dataServer
@@ -307,22 +308,13 @@ func runApp() error {
 		conn.Close()
 		break
 	}
-	//Connect to dataServer
-	dataServerAddr, err := net.ResolveTCPAddr("tcp", dataServerInfo)
-	if err != nil {
-		log.Fatal(err)
-	}
-	dataServerConn, err = net.DialTCP("tcp", nil, dataServerAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	//Get the file info from dataServer to initialize fileMap
 	initializeFilesMap()
 	for {
 		dropboxDirSize, _ := dirSize(mydropboxDir)
 		fmt.Println("Current folder size:", dropboxDirSize, "Kb")
-		if dropboxDirSize > 5000 { //if size of directory is more than 5GB(5000 Kb)
+		if dropboxDirSize > 5000000 { //if size of directory is more than 5GB(5000 Kb)
 			//inform the user
 			notifize.Display("Mydropbox", "Not enough space,please remove some files", false, "")
 			fmt.Println("Not available space ")
