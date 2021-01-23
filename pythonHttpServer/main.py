@@ -4,6 +4,7 @@ from flask import send_file
 import json
 import socket
 import database
+import os
 
 app = Flask(__name__)
 app.secret_key = "secretKey"
@@ -30,7 +31,26 @@ def signin():
                 #SEND TO ERROR PAGE
             session["username"] = userInfo.username
             session["dataServerID"] = userInfo.dataServerID
-            return render_template("welcomePage.html",Username=username)
+            serverInfo = database.getDataServer(userInfo.dataServerID)
+            #Send a request to dataServer to get listening port of user's file server
+            s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            host = serverInfo.ipAddr
+            port = int(serverInfo.listeningPort)
+            s.connect((host,port))
+            msg = {"From":"HttpServer","Rtype":"UserLogin","Data":userInfo.username}
+            req = json.dumps(msg)
+            req = req + '\n'
+            s.send(req.encode())
+            response = s.recv(1024).decode()
+            data = json.loads(response)
+            print(data)
+            fileServerPort = data["Data"]
+            if data["Rtype"] == "Error":
+                #Send error html page
+                return "<h1>Something went wrong</h1>"
+            
+            fileServerUrl = "http://{}:{}".format(serverInfo.ipAddr,fileServerPort)
+            return render_template("welcomePage.html",Username=username,fileServerURL = fileServerUrl)
         else:
             return "<h1>Wrong username</h1>"
             #SEND TO ERROR PAGE
@@ -74,7 +94,10 @@ def signup():
                 #Send them to loginPage
                 session["username"] = userInfo.username
                 session["dataServerID"] = userInfo.dataServerID
-                return render_template("welcomePage.html",Username=userInfo.username)
+                fileServerPort = data["Data"]
+                fileServerUrl = "http://{}:{}".format(serverInfo.ipAddr,fileServerPort)
+                print(fileServerUrl)
+                return render_template("welcomePage.html",Username=userInfo.username,fileServerURL = fileServerUrl)
             
         else:
             return "<h1>A username with this username already exists!</h1>"
@@ -93,9 +116,20 @@ def download():
     path = "./databaseCopy.sql"
     return send_file(path, as_attachment=True)
 
-@app.route("/user/<name>")
-def user(name):
-    return f"<h1>{name}</h1>"
+@app.route("/<user>",methods=["POST","GET"])
+def user(user):
+    if request.method == "POST":
+        username = str(request.form["key"])
+        return request.data
+    baseDir = "/home/orestis/MyDropboxClients"
+    userDir = os.path.join(baseDir,user)
+    try:
+        userFiles = os.scandir(userDir)
+    except:
+        return "No user "
+    for userFile in userFiles:
+        print(userFile.name,userFile.is_dir())
+    return render_template("welcomePage.html",Username=user,fileServerURL = fileServerUrl)
 
 if __name__ == "__main__":
     app.run(debug=True)
