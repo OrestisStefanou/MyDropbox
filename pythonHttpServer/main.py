@@ -27,8 +27,7 @@ def signin():
         userInfo = database.getUser(username)
         if userInfo:
             if password != userInfo.password:
-                return "<h1>Wrong password"
-                #SEND TO ERROR PAGE
+                return render_template("errorPage.html",errorMessage = "Wrong password")
             session["username"] = userInfo.username
             session["dataServerID"] = userInfo.dataServerID
             serverInfo = database.getDataServer(userInfo.dataServerID)
@@ -47,13 +46,12 @@ def signin():
             fileServerPort = data["Data"]
             if data["Rtype"] == "Error":
                 #Send error html page
-                return "<h1>Something went wrong</h1>"
+                return render_template("errorPage.html",errorMessage = 'Internal server error')
             
             fileServerUrl = "http://{}:{}".format(serverInfo.ipAddr,fileServerPort)
             return render_template("welcomePage.html",Username=username,fileServerURL = fileServerUrl)
         else:
-            return "<h1>Wrong username</h1>"
-            #SEND TO ERROR PAGE
+            return render_template("errorPage.html",errorMessage="No user with this username")
     else:
         return render_template("signIn.html")
 
@@ -69,8 +67,8 @@ def signup():
         password2 = request.form['entered_pass2']
         #Check if passwords match
         if password != password2:
-            return "<h1>Passwords do not match</h1>"
-            #SEND TO AN ERROR PAGE
+            #Send user to error page
+            return render_template("errorPage.html",errorMessage = "Passwords do not match")
         #Check if a user with this username already exists
         if database.getUser(username) == None :
             #Create a user
@@ -100,8 +98,8 @@ def signup():
                 return render_template("welcomePage.html",Username=userInfo.username,fileServerURL = fileServerUrl)
             
         else:
-            return "<h1>A username with this username already exists!</h1>"
-            #Send to error Page
+            #Send user to error page
+            return render_template("errorPage.html",errorMessage = "A username with this username already exists!")
     else:
         return render_template("signUp.html")
 
