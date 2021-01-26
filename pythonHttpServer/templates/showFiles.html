@@ -35,9 +35,11 @@
     <div class="container">
         <div class="row">
           <div class="col">
-            {% for x in userFiles %}
-             <p>{{x}}</p>
-            {% endfor %}
+            <div class="list-group">
+                {% for x in userFiles %}
+                <a href="{{ url_for('download',filename=x) }}" class="list-group-item list-group-item-action">{{x}}</a>
+                {% endfor %}
+              </div>
           </div>
           <div class="col">
             <img src="/static/img/homeImg1.jpg" alt="" width="600" height="500">

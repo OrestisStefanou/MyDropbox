@@ -149,7 +149,8 @@ def userFiles():
             s.send(req.encode())
         print(userFiles)
         s.close()
-        return render_template("showFiles.html",userFiles = userFiles)
+        files = [x.replace("/","\\") for x in userFiles]
+        return render_template("showFiles.html",userFiles = files)
         
 
 @app.route("/logout")
@@ -158,10 +159,11 @@ def logout():
     session.pop("dataServerID",None)
     return redirect(url_for("home"))
 
-@app.route("/download")
-def download():
-    path = "./databaseCopy.sql"
-    return send_file(path, as_attachment=True)
+@app.route("/download/<filename>")
+def download(filename):
+    return filename.replace("\\","/")
+    #path = "./databaseCopy.sql"
+    #return send_file(path, as_attachment=True)
 
 @app.route("/<user>",methods=["POST","GET"])
 def user(user):
