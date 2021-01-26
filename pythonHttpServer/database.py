@@ -92,3 +92,24 @@ def getDataServer(serverID):
     server = results[0]
     serverInfo = dataServer(server[0],server[1],server[2],server[3],server[4],server[5])
     return serverInfo
+
+#Update a user's info
+def updateUserInfo(username,password,email):
+    if password == "":
+        sql = "UPDATE Users SET Email = %s WHERE Username = %s"
+        val = (email,username)
+        mycursor.execute(sql,val)
+        mydb.commit()
+        return
+    if email == "":
+        sql = "UPDATE Users SET Password = %s WHERE Username = %s"
+        val = (password,username)
+        mycursor.execute(sql,val)
+        mydb.commit()
+        return
+    
+    sql = "UPDATE Users SET Email = %s,Password = %s WHERE Username = %s"
+    val = (email,password,username)
+    mycursor.execute(sql,val)
+    mydb.commit()
+        

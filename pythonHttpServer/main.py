@@ -41,6 +41,7 @@ def signin():
             req = req + '\n'
             s.send(req.encode())
             response = s.recv(1024).decode()
+            s.close()
             data = json.loads(response)
             print(data)
             fileServerPort = data["Data"]
@@ -85,6 +86,7 @@ def signup():
             s.send(req.encode())
             response = s.recv(1024).decode()
             data = json.loads(response)
+            s.close()
             print(data)
             if data["Rtype"] == "OK":
                 #Create a user in the database\
@@ -102,6 +104,22 @@ def signup():
             return render_template("errorPage.html",errorMessage = "A username with this username already exists!")
     else:
         return render_template("signUp.html")
+
+@app.route("/editProfile",methods=["POST","GET"])
+def editProfile():
+    if request.method == "POST":
+        #Handle the form
+        email = request.form['entered_email']
+        password = request.form['entered_pass']
+        password2 = request.form['entered_pass2']
+        #Check if passwords match
+        if password != password2:
+            #Send user to error page
+            return render_template("errorPage.html",errorMessage = "Passwords do not match")
+        database.updateUserInfo(session["username"],password,email)
+        return render_template("welcomePage.html",Username = session["username"])
+    else:
+        return render_template("editProfile.html")   
 
 @app.route("/logout")
 def logout():
