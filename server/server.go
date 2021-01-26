@@ -81,6 +81,8 @@ func handleConn(conn net.Conn) {
 			updateUserFile(conn, request)
 		case "FileDeleted":
 			deleteUserFile(conn, request)
+		case "SendUserFiles":
+			sendUserFiles(conn, request)
 		default:
 			fmt.Println(request)
 			response, _ := createMsg("DataServer", "Response", "Testing")

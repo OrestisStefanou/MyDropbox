@@ -138,6 +138,7 @@ func deleteUserFile(conn net.Conn, request netMsg) {
 	sendMsg(conn, response)
 }
 
+//DELETE THIS FUNCTION
 func getFile(conn net.Conn, path string) {
 	f, err := os.Create(path)
 	check(err)
@@ -178,6 +179,35 @@ func recieveFile(conn net.Conn, path string) {
 		fmt.Println(err)
 		return
 	}
+}
+
+//Send the name of the user's files to http server
+func sendUserFiles(conn net.Conn, request netMsg) {
+	username := request.Data
+	rows, err := db.Query("SELECT Filepath FROM Files WHERE Owner=?", username)
+	if err != nil {
+		fmt.Println("Error during sending the files info to the user")
+		return
+	}
+	//Send the zip client app file first
+	response, _ := createMsg("DataServer", "Filename", "myDropboxApp")
+	sendMsg(conn, response)
+	getMsg(conn)
+
+	var filename string
+	for rows.Next() {
+		err = rows.Scan(&filename)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		//Send the filename to http server
+		response, _ := createMsg("DataServer", "Filename", filename)
+		sendMsg(conn, response)
+		getMsg(conn)
+	}
+	response, _ = createMsg("DataServer", "Filename", "Finished")
+	sendMsg(conn, response)
 }
 
 func checkErr(err error) {

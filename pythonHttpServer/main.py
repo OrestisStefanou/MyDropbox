@@ -121,6 +121,37 @@ def editProfile():
     else:
         return render_template("editProfile.html")   
 
+
+@app.route("/userFiles",methods=["POST","GET"])
+def userFiles():
+    if request.method == "GET":
+        #Send a request to the DataServer of the user to get the file names
+        serverInfo = database.getDataServer(session["dataServerID"])
+        #Send a request to dataServer to get listening port of user's file server
+        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        host = serverInfo.ipAddr
+        port = int(serverInfo.listeningPort)
+        s.connect((host,port))
+        msg = {"From":"HttpServer","Rtype":"SendUserFiles","Data":session["username"]}
+        req = json.dumps(msg)
+        req = req + '\n'
+        s.send(req.encode())
+        userFiles = list()
+        while True:
+            response = s.recv(1024).decode()
+            data = json.loads(response)
+            if data["Data"] == "Finished":
+                break
+            userFiles.append(data["Data"])
+            msg = {"From":"HttpServer","Rtype":"GotIt","Data":""}
+            req = json.dumps(msg)
+            req = req + '\n'
+            s.send(req.encode())
+        print(userFiles)
+        s.close()
+        return render_template("showFiles.html",userFiles = userFiles)
+        
+
 @app.route("/logout")
 def logout():
     session.pop("username",None)

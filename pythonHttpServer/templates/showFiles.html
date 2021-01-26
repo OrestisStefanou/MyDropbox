@@ -18,11 +18,11 @@
     <img src="/static/img/logo.png" width="250" height="500" alt="Logo" class="img-thumbnail">
     </a>
 
-    <h1 style="color:white;">Welcome {{Username}}</h1>
+    <h1 style="color:white;">My Files</h1>
 
     <ul class="nav">
         <li class="nav-item">
-          <a class="nav-link active" href="{{url_for('userFiles')}}" style="color:white;background-color:green;">Go to my Files</a>
+          <a class="nav-link active" href="#" style="color:white;background-color:green;">Go to my Files</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('editProfile') }}" style="color:white;background-color:green;">Edit my profile</a>
@@ -35,7 +35,9 @@
     <div class="container">
         <div class="row">
           <div class="col">
-
+            {% for x in userFiles %}
+             <p>{{x}}</p>
+            {% endfor %}
           </div>
           <div class="col">
             <img src="/static/img/homeImg1.jpg" alt="" width="600" height="500">
