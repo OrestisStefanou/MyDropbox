@@ -2,18 +2,20 @@ DesktopApp(Client):
 -Runs in the background     DONE
 -Connects to request server first.  DONE
 -Request Server sends the network info of the DataServer that has his remote directory to connect to    DONE
--Connects to a DataServer
--Checks for any new files or updates in exhisting ones
--Checks if there is available space
--Sends the updates to the server(if there is available space)
+-Connects to a DataServer   DONE
+-Checks for any new files or updates in exhisting ones DONE
+-Checks if there is available space DONE 
+-Sends the updates to the server(if there is available space) DONE
 
-RequestServer
+RequestServer (RENAME THIS TO ROUTER SERVER)
 -Routes the clients to the correct DataServer   DONE
+-Requests the files of a client from the DataServer to send them to httpServer
+-Requests a file of a user from the DataServer,so the http server can send it to the client
 
 DataServer
--Gets the updates from the client and updates the client's remote directory
+-Gets the updates from the client and updates the client's remote directory     DONE
 -If the client's local directory is out of date the server will send the updated files and vica verca
--Hosting the http file server to access the files from the website
+-Hosting the http file server to access the files from the website      DONE
 
 Communication Protocol:
 -Requests and responses will be encoded and decoded in JSON
@@ -41,3 +43,5 @@ RequestServer and httpServer will run in the same machine.Create a process that 
 the request and http server and monitor them
 
 Kill the fileServers processes that we spawn from DataServer
+Create Log files
+Race conditions in the database??

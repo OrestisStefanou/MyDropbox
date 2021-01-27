@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -63,6 +66,24 @@ func sendMsg(conn net.Conn, msg []byte) {
 			return
 		}
 		totalBytesSent += bytesSent
+	}
+}
+
+func recieveFile(conn net.Conn, path, username, filename string) {
+	//Create the file
+	f, err := os.Create(filepath.Join(path, filename))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	request, err := createMsg(username, "SendFile", filename)
+	sendMsg(conn, request)
+	//Accept file from dataServer and write to new file
+	_, err = io.Copy(f, conn)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 }
 

@@ -27,11 +27,11 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		go handleDesktopClient(conn)
+		go handleClient(conn)
 	}
 }
 
-func handleDesktopClient(conn net.Conn) {
+func handleClient(conn net.Conn) {
 	for {
 		request, err := getMsg(conn)
 		if err != nil {
@@ -50,9 +50,43 @@ func handleDesktopClient(conn net.Conn) {
 		switch request.Rtype {
 		case "getDataServerInfo":
 			sendDataServerInfo(conn, request.Data)
+		case "GetFile":
+			getFileFromDataServer(conn, request)
 		}
 
 	}
+}
+
+func getFileFromDataServer(conn net.Conn, request netMsg) {
+	username := request.From
+	filename := request.Data
+	userInfo, err := getUser(username)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	serverInfo, err := getDataServer(userInfo.dataServerID)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(serverInfo)
+	fmt.Println(filename)
+	//Connect to dataServer to receive the file
+	addr := fmt.Sprintf("%s:%s", serverInfo.ipAddr, serverInfo.listeningPort)
+	dataServerAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	dataServerConn, err := net.DialTCP("tcp", nil, dataServerAddr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	recieveFile(dataServerConn, "/home/orestis/Desktop", username, filename) //CHANGE THE PATH
+	dataServerConn.Close()
+	//Send the file of the path to http server
 }
 
 func sendDataServerInfo(conn net.Conn, username string) {

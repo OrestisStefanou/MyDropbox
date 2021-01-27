@@ -161,7 +161,21 @@ def logout():
 
 @app.route("/download/<filename>")
 def download(filename):
+    #Send a request to request server to get the file from dataServer
+    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    host = "127.0.0.1"
+    port = 4000
+    s.connect((host,port))
+    msg = {"From":session["username"],"Rtype":"GetFile","Data":filename.replace("\\","/")}
+    req = json.dumps(msg)
+    req = req + '\n'
+    s.send(req.encode())
+    #Read the path of the file
+    #response = s.recv(1024).decode()
+    #data = json.loads(response)
+    s.close()
     return filename.replace("\\","/")
+    #Wait for a response with the path of the file to send it to the user
     #path = "./databaseCopy.sql"
     #return send_file(path, as_attachment=True)
 

@@ -57,6 +57,7 @@ func handleConn(conn net.Conn) {
 		if err != nil {
 			if err == io.EOF {
 				log.Println("<-", err)
+				conn.Close()
 				return
 			}
 			if nerr, ok := err.(net.Error); ok && !nerr.Temporary() {
@@ -83,12 +84,19 @@ func handleConn(conn net.Conn) {
 			deleteUserFile(conn, request)
 		case "SendUserFiles":
 			sendUserFiles(conn, request)
+		case "SendFile":
+			username := request.From
+			filename := request.Data
+			filepathToSend := filepath.Join(baseDir, username, filename)
+			fmt.Println("Sending file ", filepathToSend)
+			sendFile(conn, filepathToSend)
+			conn.Close()
+			return
 		default:
 			fmt.Println(request)
 			response, _ := createMsg("DataServer", "Response", "Testing")
 			sendMsg(conn, response)
 		}
-
 	}
 }
 

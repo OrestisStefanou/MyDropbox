@@ -163,6 +163,23 @@ func getFile(conn net.Conn, path string) {
 	}
 }
 
+//Send a file to RouteServer
+func sendFile(conn net.Conn, path string) {
+	//Open file to upload
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+	//Upload
+	_, err = io.Copy(conn, file)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
 func recieveFile(conn net.Conn, path string) {
 	//Create the file
 	f, err := os.Create(path)
