@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -80,13 +81,24 @@ func getFileFromDataServer(conn net.Conn, request netMsg) {
 		return
 	}
 	dataServerConn, err := net.DialTCP("tcp", nil, dataServerAddr)
+	defer dataServerConn.Close()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	recieveFile(dataServerConn, "/home/orestis/Desktop", username, filename) //CHANGE THE PATH
-	dataServerConn.Close()
+	tempDir := "/home/orestis/Desktop/tempFiles"
+	fileDir := filepath.Join(tempDir, username)
+	err = os.MkdirAll(fileDir, 0755)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	recieveFile(dataServerConn, fileDir, username, filename)
 	//Send the file of the path to http server
+	_, file := filepath.Split(filename)
+	tempFilePath := filepath.Join(fileDir, file)
+	response, _ := createMsg("RouteServer", "Filepath", tempFilePath)
+	sendMsg(conn, response)
 }
 
 func sendDataServerInfo(conn net.Conn, username string) {

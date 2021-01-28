@@ -171,10 +171,11 @@ def download(filename):
     req = req + '\n'
     s.send(req.encode())
     #Read the path of the file
-    #response = s.recv(1024).decode()
-    #data = json.loads(response)
+    response = s.recv(1024).decode()
+    data = json.loads(response)
+    path = data["Data"]
     s.close()
-    return filename.replace("\\","/")
+    return send_file(path,as_attachment=True)
     #Wait for a response with the path of the file to send it to the user
     #path = "./databaseCopy.sql"
     #return send_file(path, as_attachment=True)

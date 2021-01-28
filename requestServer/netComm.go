@@ -71,7 +71,8 @@ func sendMsg(conn net.Conn, msg []byte) {
 
 func recieveFile(conn net.Conn, path, username, filename string) {
 	//Create the file
-	f, err := os.Create(filepath.Join(path, filename))
+	_, file := filepath.Split(filename)
+	f, err := os.Create(filepath.Join(path, file))
 	if err != nil {
 		fmt.Println(err)
 		return
