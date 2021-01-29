@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var tempFiles chan string
+
 func main() {
 	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000")
 	if err != nil {
@@ -21,6 +23,10 @@ func main() {
 	}
 	//Connect to the database
 	dbConnect("orestis", "Ore$tis1997", "myDropbox")
+	//Initialize the channel
+	tempFiles = make(chan string, 10)
+	//Start a go routine to handle temporary Files
+	go handleTempFiles()
 	for {
 		time.Sleep(time.Millisecond * 100)
 		conn, err := listener.AcceptTCP()
@@ -73,6 +79,7 @@ func getFileFromDataServer(conn net.Conn, request netMsg) {
 	}
 	fmt.Println(serverInfo)
 	fmt.Println(filename)
+	//First check if we already have it
 	//Connect to dataServer to receive the file
 	addr := fmt.Sprintf("%s:%s", serverInfo.ipAddr, serverInfo.listeningPort)
 	dataServerAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -99,6 +106,8 @@ func getFileFromDataServer(conn net.Conn, request netMsg) {
 	tempFilePath := filepath.Join(fileDir, file)
 	response, _ := createMsg("RouteServer", "Filepath", tempFilePath)
 	sendMsg(conn, response)
+	//Send the filepath to tempFiles channel so the go routine can handle it
+	tempFiles <- tempFilePath
 }
 
 func sendDataServerInfo(conn net.Conn, username string) {
@@ -119,4 +128,28 @@ func sendDataServerInfo(conn net.Conn, username string) {
 		return
 	}
 	sendMsg(conn, response)
+}
+
+//Check if a file in tempDir exists for more than 10 minutes
+//If true delete it
+func handleTempFiles() {
+	//Map with key the filepath and value the time of creation
+	tempFilesMap := make(map[string]time.Time)
+	for {
+		select {
+		case file := <-tempFiles:
+			fmt.Printf("Got a new tempfile:%s from a channel\n", file)
+			tempFilesMap[file] = time.Now()
+		default:
+			//Range the map to see if a file exists for more than 5 minutes
+			for tempFile, creationTime := range tempFilesMap {
+				deleteTime := creationTime.Add(1 * time.Minute)
+				timeToDelete := time.Now().After(deleteTime)
+				if timeToDelete {
+					os.Remove(tempFile)
+				}
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
 }
