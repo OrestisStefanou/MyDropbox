@@ -42,6 +42,12 @@ DATABASE DESIGN:
 RequestServer and httpServer will run in the same machine.Create a process that starts
 the request and http server and monitor them
 
-Kill the fileServers processes that we spawn from DataServer
 Create Log files
 Race conditions in the database??
+Handle better the tempFiles in requestServer 
+Create backUps
+Create conf Files
+Shared files ??
+Add insrtructions of how to use in the website
+Security
+Monitor the system in case of failure

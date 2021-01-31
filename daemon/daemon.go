@@ -287,7 +287,7 @@ func runApp() error {
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
 	for {
 		//Connect to router server to get the info of the dataServer
-		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000")
+		addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:4000") //GET THIS FROM CONF FILE
 		if err != nil {
 			fmt.Println("PROBLEM WITH THE IP AND PORT PROVIDED")
 			os.Exit(1)

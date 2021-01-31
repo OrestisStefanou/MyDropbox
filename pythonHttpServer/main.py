@@ -30,27 +30,7 @@ def signin():
                 return render_template("errorPage.html",errorMessage = "Wrong password")
             session["username"] = userInfo.username
             session["dataServerID"] = userInfo.dataServerID
-            serverInfo = database.getDataServer(userInfo.dataServerID)
-            #Send a request to dataServer to get listening port of user's file server
-            s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            host = serverInfo.ipAddr
-            port = int(serverInfo.listeningPort)
-            s.connect((host,port))
-            msg = {"From":"HttpServer","Rtype":"UserLogin","Data":userInfo.username}
-            req = json.dumps(msg)
-            req = req + '\n'
-            s.send(req.encode())
-            response = s.recv(1024).decode()
-            s.close()
-            data = json.loads(response)
-            print(data)
-            fileServerPort = data["Data"]
-            if data["Rtype"] == "Error":
-                #Send error html page
-                return render_template("errorPage.html",errorMessage = 'Internal server error')
-            
-            fileServerUrl = "http://{}:{}".format(serverInfo.ipAddr,fileServerPort)
-            return render_template("welcomePage.html",Username=username,fileServerURL = fileServerUrl)
+            return render_template("welcomePage.html",Username=username)
         else:
             return render_template("errorPage.html",errorMessage="No user with this username")
     else:
@@ -94,10 +74,7 @@ def signup():
                 #Send them to loginPage
                 session["username"] = userInfo.username
                 session["dataServerID"] = userInfo.dataServerID
-                fileServerPort = data["Data"]
-                fileServerUrl = "http://{}:{}".format(serverInfo.ipAddr,fileServerPort)
-                print(fileServerUrl)
-                return render_template("welcomePage.html",Username=userInfo.username,fileServerURL = fileServerUrl)
+                return render_template("welcomePage.html",Username=userInfo.username)
             
         else:
             #Send user to error page
@@ -176,9 +153,6 @@ def download(filename):
     path = data["Data"]
     s.close()
     return send_file(path,as_attachment=True)
-    #Wait for a response with the path of the file to send it to the user
-    #path = "./databaseCopy.sql"
-    #return send_file(path, as_attachment=True)
 
 @app.route("/<user>",methods=["POST","GET"])
 def user(user):

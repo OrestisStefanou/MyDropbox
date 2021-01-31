@@ -4,26 +4,14 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"sync"
 	"time"
 )
 
-const baseDir = "/home/orestis/MyDropboxClients"
-
-type fileServerEntry struct {
-	procInfo *exec.Cmd
-	procPort string
-}
-
-var fileServers = make(map[string]fileServerEntry)
-
-var mu sync.RWMutex //Read write mutex to protect fileServers map from race conditions
+const baseDir = "/home/orestis/MyDropboxClients" //READ THIS FROM A CONF FILE
 
 func main() {
 	if len(os.Args) != 2 {
@@ -39,7 +27,6 @@ func main() {
 	}
 	//Connect to the database
 	dbConnect("orestis", "Ore$tis1997", "myDropbox")
-	go handleFileServers()
 	for {
 		time.Sleep(time.Millisecond * 100)
 		conn, err := listener.AcceptTCP()
@@ -71,8 +58,6 @@ func handleConn(conn net.Conn) {
 		switch request.Rtype {
 		case "createUser":
 			createUser(conn, request)
-		case "UserLogin":
-			userLogin(conn, request)
 		case "FilesMapInit":
 			sendFileInfo(conn, request)
 		case "NewFile":
@@ -98,31 +83,6 @@ func handleConn(conn net.Conn) {
 			sendMsg(conn, response)
 		}
 	}
-}
-
-//Send the listening port of dataServer for the user
-func userLogin(conn net.Conn, r netMsg) {
-	username := r.Data
-	mu.RLock()
-	fileServerInfo, prs := fileServers[username]
-	if !prs {
-		fmt.Println("User's data server listening port is not in the map!")
-		response, err := createMsg("DataServer", "Error", "")
-		if err != nil {
-			fmt.Println("Problem at creating the message")
-			return
-		}
-		sendMsg(conn, response)
-	}
-	mu.RUnlock()
-	fileServerPort := fileServerInfo.procPort
-	//Respond to the http server the dataServer Port
-	response, err := createMsg("DataServer", "OK", fileServerPort)
-	if err != nil {
-		fmt.Println("Problem at creating the message")
-		return
-	}
-	sendMsg(conn, response)
 }
 
 //Send the files info of the user to desktop client
@@ -157,24 +117,8 @@ func createUser(conn net.Conn, r netMsg) {
 		sendMsg(conn, response)
 		return
 	}
-	//Get the port of fileServer for this user
-	var fileServerPort string
-	var fileServerInfo fileServerEntry
-	var prs bool
-	for { //Run this loop until the goroutine that handles the fileServers starts the fileServer
-		mu.RLock()
-		fileServerInfo, prs = fileServers[username]
-		if prs {
-			mu.RUnlock()
-			break
-		}
-		mu.RUnlock()
-		time.Sleep(1 * time.Second)
-	}
-	fileServerPort = fileServerInfo.procPort
-	fmt.Println("File server port is ", fileServerPort)
-	//Respond to the http server that directory created
-	response, err := createMsg("DataServer", "OK", fileServerPort)
+
+	response, err := createMsg("DataServer", "OK", "")
 	if err != nil {
 		fmt.Println("Problem at creating the message")
 		return
@@ -263,33 +207,4 @@ func addFileToZip(zipWriter *zip.Writer, filename string) error {
 	}
 	_, err = io.Copy(writer, fileToZip)
 	return err
-}
-
-func handleFileServers() {
-	port := 3000
-	for {
-		time.Sleep(1 * time.Second)
-		c, err := ioutil.ReadDir(baseDir)
-		if err != nil {
-			log.Println("Error during reading the base directory")
-			return
-		}
-		mu.Lock()
-		for _, entry := range c {
-			_, prs := fileServers[entry.Name()]
-			if prs { //File server is already running
-				continue
-			} else {
-				//Start the file server for this directory
-				fileServerPath := filepath.Join(baseDir, entry.Name())
-				fmt.Println(fileServerPath, port)
-				cmd := exec.Command("./fileServer", fileServerPath, fmt.Sprint(port))
-				cmd.Start()
-				serverEntry := fileServerEntry{cmd, fmt.Sprint(port)}
-				fileServers[entry.Name()] = serverEntry
-				port++
-			}
-		}
-		mu.Unlock()
-	}
 }

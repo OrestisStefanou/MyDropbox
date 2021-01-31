@@ -79,7 +79,6 @@ func getFileFromDataServer(conn net.Conn, request netMsg) {
 	}
 	fmt.Println(serverInfo)
 	fmt.Println(filename)
-	//First check if we already have it
 	//Connect to dataServer to receive the file
 	addr := fmt.Sprintf("%s:%s", serverInfo.ipAddr, serverInfo.listeningPort)
 	dataServerAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -93,7 +92,7 @@ func getFileFromDataServer(conn net.Conn, request netMsg) {
 		fmt.Println(err)
 		return
 	}
-	tempDir := "/home/orestis/Desktop/tempFiles"
+	tempDir := "/home/orestis/Desktop/tempFiles" //PUT THIS IN A CONF FILE
 	fileDir := filepath.Join(tempDir, username)
 	err = os.MkdirAll(fileDir, 0755)
 	if err != nil {
@@ -130,7 +129,7 @@ func sendDataServerInfo(conn net.Conn, username string) {
 	sendMsg(conn, response)
 }
 
-//Check if a file in tempDir exists for more than 10 minutes
+//Check if a file in tempDir exists for more than 5 minutes
 //If true delete it
 func handleTempFiles() {
 	//Map with key the filepath and value the time of creation
@@ -143,10 +142,11 @@ func handleTempFiles() {
 		default:
 			//Range the map to see if a file exists for more than 5 minutes
 			for tempFile, creationTime := range tempFilesMap {
-				deleteTime := creationTime.Add(1 * time.Minute)
+				deleteTime := creationTime.Add(5 * time.Minute)
 				timeToDelete := time.Now().After(deleteTime)
 				if timeToDelete {
 					os.Remove(tempFile)
+					delete(tempFilesMap, tempFile)
 				}
 			}
 			time.Sleep(10 * time.Second)
