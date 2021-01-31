@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -107,7 +108,9 @@ func createUser(conn net.Conn, r netMsg) {
 		sendMsg(conn, response)
 		return
 	}
-	err = createZip(userDir, username)
+	routeServerInfo := conn.RemoteAddr().String()
+	routeServerIP := strings.Split(routeServerInfo, ":")[0]
+	err = createZip(userDir, username, routeServerIP)
 	if err != nil {
 		response, err := createMsg("DataServer", "ERROR", "")
 		if err != nil {
@@ -127,13 +130,17 @@ func createUser(conn net.Conn, r netMsg) {
 }
 
 //Create the zip file that contains the neccessary files to install the app
-func createZip(userDir, username string) error {
+func createZip(userDir, username, routeServerIP string) error {
 	//Create the conf file
 	f, err := os.Create("client.conf")
 	if err != nil {
 		return err
 	}
 	_, err = f.WriteString(username + "\n")
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(fmt.Sprintf("%s:4000\n", routeServerIP))
 	if err != nil {
 		return err
 	}
