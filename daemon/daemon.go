@@ -273,7 +273,6 @@ func stopApp() (err error) {
 }
 
 func runApp() error {
-	fmt.Println("RUNNING")
 	//Read the username and myDropbox dir from conf file
 	confFilePath := filepath.Join(varDir, "client.conf")
 	lines, err := ReadLines(confFilePath)
@@ -283,14 +282,13 @@ func runApp() error {
 	myUsername = lines[0]
 	routeServerAddr := lines[1]
 	mydropboxDir = lines[2]
-	fmt.Println(mydropboxDir)
 
 	//Run the loop until we connect to the server(In case of no internet try until there is internet connection)
 	for {
 		//Connect to router server to get the info of the dataServer
-		addr, err := net.ResolveTCPAddr("tcp", routeServerAddr) //GET THIS FROM CONF FILE
+		addr, err := net.ResolveTCPAddr("tcp", routeServerAddr)
 		if err != nil {
-			fmt.Println("PROBLEM WITH THE IP AND PORT PROVIDED")
+			fmt.Println("PROBLEM WITH THE IP AND PORT OF ROUTE SERVER")
 			os.Exit(1)
 		}
 		conn, err := net.DialTCP("tcp", nil, addr)
@@ -317,8 +315,7 @@ func runApp() error {
 	initializeFilesMap()
 	for {
 		dropboxDirSize, _ := dirSize(mydropboxDir)
-		fmt.Println("Current folder size:", dropboxDirSize, "Kb")
-		if dropboxDirSize > 5000000 { //if size of directory is more than 5GB(5000 Kb)
+		if dropboxDirSize > 5000000 { //if size of directory is more than 5GB(5000000 Kb)
 			//inform the user
 			notifize.Display("Mydropbox", "Not enough space,please remove some files", false, "")
 			fmt.Println("Not available space ")

@@ -50,7 +50,7 @@ func initializeFilesMap() {
 			fmt.Println(err)
 			break
 		}
-		fmt.Println(entry)
+		//fmt.Println(entry)
 		filesMap[entry.Filename] = entry.ModTime
 		msg, _ := createMsg("DesktopClient", "GotIt", "")
 		sendMsg(dataServerConn, msg)

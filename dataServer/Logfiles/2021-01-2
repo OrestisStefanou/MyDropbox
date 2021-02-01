@@ -1,0 +1,25 @@
+2021/02/01 21:11:49 127.0.0.1:33158 : Orestis :Requested to get files timestamps
+2021/02/01 21:11:49 <- EOF
+2021/02/01 21:12:03 127.0.0.1:33190 : Orestis :Requested to get files names
+2021/02/01 21:12:03 <- EOF
+2021/02/01 21:12:25 127.0.0.1:33194 : Orestis :Requested to create a new file: bitcoin.cpp
+2021/02/01 21:12:25 <- EOF
+2021/02/01 21:12:32 127.0.0.1:33198 : Orestis :Requested to get files names
+2021/02/01 21:12:32 <- EOF
+2021/02/01 21:12:34 127.0.0.1:33212 : Orestis :Requested to get file: /home/orestis/MyDropboxClients/Orestis/bitcoin.cpp
+2021/02/01 21:13:10 127.0.0.1:33218 : Orestis :Requested to create a new file: .bitcoin.cpp.swp
+2021/02/01 21:13:10 <- EOF
+2021/02/01 21:13:16 127.0.0.1:33220 : Orestis :Requested to update file: /home/orestis/MyDropboxClients/Orestis/.bitcoin.cpp.swp
+2021/02/01 21:13:16 <- EOF
+2021/02/01 21:13:21 127.0.0.1:33222 : Orestis :Requested to update file: /home/orestis/MyDropboxClients/Orestis/.bitcoin.cpp.swp
+2021/02/01 21:13:22 <- EOF
+2021/02/01 21:13:27 127.0.0.1:33224 : Orestis :Requested to delete file: /home/orestis/MyDropboxClients/Orestis/.bitcoin.cpp.swp
+2021/02/01 21:13:27 <- EOF
+2021/02/01 21:13:28 127.0.0.1:33226 : Orestis :Requested to update file: /home/orestis/MyDropboxClients/Orestis/bitcoin.cpp
+2021/02/01 21:13:28 <- EOF
+2021/02/01 21:13:42 127.0.0.1:33230 : Orestis :Requested to get files names
+2021/02/01 21:13:42 <- EOF
+2021/02/01 21:14:13 127.0.0.1:33240 : Orestis :Requested to delete file: /home/orestis/MyDropboxClients/Orestis/Jim Blandy, Jason Orendorff - Programming Rust_ Fast, Safe Systems Development-O’Reilly Media (2017).pdf
+2021/02/01 21:14:14 <- EOF
+2021/02/01 21:14:15 127.0.0.1:33244 : Orestis :Requested to get files names
+2021/02/01 21:14:15 <- EOF
